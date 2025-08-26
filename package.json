@@ -1,0 +1,26 @@
+{
+	"name": "schmart-icp",
+	"version": "1.0.0",
+	"description": "",
+	"type": "module",
+	"scripts": {
+		"dev": "node --experimental-strip-types src/index.ts",
+		"format": "biome format .",
+		"format:fix": "biome format --write . ",
+		"lint": "biome lint .",
+		"lint:fix": "biome lint --write .",
+		"typecheck": "tsc --noEmit --emitDeclarationOnly false"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"packageManager": "pnpm@10.11.0",
+	"devDependencies": {
+		"@biomejs/biome": "^2.2.2",
+		"@types/node": "^24.3.0"
+	},
+	"dependencies": {
+		"dotenv": "^17.2.1",
+		"openai": "^5.15.0"
+	}
+}
