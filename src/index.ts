@@ -1,17 +1,40 @@
 import "dotenv/config";
-import OpenAI from "openai";
+import { z } from "zod/v4";
+import { callLLM } from "./api.ts";
 
-const openai = new OpenAI({
-	apiKey: process.env.OPENAI_API_KEY,
+const EAM_TOOLS = [
+	"LeanIX",
+	"Ardoq",
+	"Alfabet",
+	"ADOIT",
+	"ArchiMate",
+	"LUY",
+	"Bee360",
+	"other",
+	"unknown",
+];
+
+const eamToolSchema = z.object({
+	eam_tool: z.enum(EAM_TOOLS).describe("The EAM tool used by the company."),
+	confidence_level: z
+		.number()
+		.min(0)
+		.max(1)
+		.describe("Confidence level of the answer from 0 to 1."),
+	explanation: z.string().describe("Explain of the answer."),
 });
 
-const EAM_PROMPT = (company: string) =>
-	`You are a research assistant. Find out which Enterprise Architecture Management (EAM) tool this company uses—choices include LeanIX, Ardoq, Alfabet, ADOIT, ArchiMate, LUY, Bee360, and others. Use real-time web search to locate the information, cite your sources, and reply concisely. If you can't find the information, say so clearly.
-  `.trim();
+async function researchCompany(company: string) {
+	const response = await callLLM({
+		prompt: `Find out which Enterprise Architecture Management (EAM) tool the company ${company} uses — choices include LeanIX, Ardoq, Alfabet, ADOIT, ArchiMate, LUY, Bee360, and others. Use web search to locate the information, cite your sources, and reply concisely. If you can't find the information, say so clearly.`,
+		response_schema: {
+			name: "eam_tool_research",
+			schema: eamToolSchema,
+		},
+	});
 
-const response = await openai.responses.create({
-	model: "gpt-5",
-	input: "Tell me a three sentence bedtime story about a unicorn.",
-});
+	console.log(response);
+	console.log(response.choices[0].message);
+}
 
-console.log(response);
+researchCompany("Siemens Energy");
