@@ -1,40 +1,72 @@
 import "dotenv/config";
-import { z } from "zod/v4";
-import { callLLM } from "./api.ts";
+import { researchAllFields } from "./research.ts";
+import type { CompanyInput } from "./types.ts";
 
-const EAM_TOOLS = [
-	"LeanIX",
-	"Ardoq",
-	"Alfabet",
-	"ADOIT",
-	"ArchiMate",
-	"LUY",
-	"Bee360",
-	"other",
-	"unknown",
-];
+console.log("🔥 Script loaded successfully!");
 
-const eamToolSchema = z.object({
-	eam_tool: z.enum(EAM_TOOLS).describe("The EAM tool used by the company."),
-	confidence_level: z
-		.number()
-		.min(0)
-		.max(1)
-		.describe("Confidence level of the answer from 0 to 1."),
-	explanation: z.string().describe("Explain of the answer."),
-});
+/**
+ * Main function to research a company using AI-powered tools
+ * @param companyName - The name of the company to research
+ * @param domain - Optional domain of the company
+ */
+async function researchCompany(companyName: string, domain?: string) {
+	console.log(`🔍 Starting research for ${companyName}`);
+	console.log(`Domain: ${domain}`);
 
-async function researchCompany(company: string) {
-	const response = await callLLM({
-		prompt: `Find out which Enterprise Architecture Management (EAM) tool the company ${company} uses — choices include LeanIX, Ardoq, Alfabet, ADOIT, ArchiMate, LUY, Bee360, and others. Use web search to locate the information, cite your sources, and reply concisely. If you can't find the information, say so clearly.`,
-		response_schema: {
-			name: "eam_tool_research",
-			schema: eamToolSchema,
-		},
-	});
+	const companyInput: CompanyInput = {
+		name: companyName,
+		domain: domain,
+	};
 
-	console.log(response);
-	console.log(response.choices[0].message);
+	try {
+		const results = await researchAllFields(companyName);
+		const companyOutput = { ...companyInput, ...results };
+
+		console.log("=".repeat(20), " Research Results ", "=".repeat(20));
+		console.log(companyOutput);
+
+		return companyOutput;
+	} catch (error) {
+		console.error("❌ Error researching company:", error);
+		throw error;
+	}
 }
 
-researchCompany("Siemens Energy");
+/**
+ * Simple CLI for company research
+ * Usage: pnpm run dev "Company Name"
+ */
+function main() {
+	console.log("Starting main function...");
+	const args = process.argv.slice(2);
+	console.log("Arguments received:", args);
+
+	if (args.length === 0) {
+		console.log("🔍 Company Research CLI");
+		console.log('Usage: pnpm run dev "Company Name"');
+		console.log('Example: pnpm run dev "Siemens Energy"');
+		process.exit(0);
+	}
+
+	const companyName = args.join(" ");
+
+	console.log(`🚀 Starting research for: ${companyName}`);
+	console.log("=".repeat(50));
+
+	researchCompany(companyName)
+		.then(() => {
+			console.log("\n✅ Research completed successfully!");
+		})
+		.catch((error) => {
+			console.error("\n❌ Research failed:", error.message);
+			process.exit(1);
+		});
+}
+
+// Check if this module is being run directly
+if (
+	process.argv[1]?.includes("index.ts") ||
+	process.argv[1]?.endsWith("index.js")
+) {
+	main();
+}
