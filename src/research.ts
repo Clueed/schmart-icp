@@ -1,15 +1,28 @@
 import { callLLM } from "./api.ts";
+import { Logger } from "./logger.ts";
 import { researchFieldConfiguration } from "./prompts.ts";
 import { baseResponseSchema } from "./schemas.ts";
+import type { CompanyInput } from "./types.ts";
 
-/**
- * Research all fields for a company
- * @param company - The company name to research
- * @returns Object containing all research results for the company
- */
+export async function researchCompany(companyName: string, domain?: string) {
+	Logger.log(`🔍 Starting research for ${companyName}`);
+	Logger.log(`Domain: ${domain}`);
+
+	const companyInput: CompanyInput = {
+		name: companyName,
+		domain: domain,
+	};
+
+	const results = await researchAllFields(companyName);
+	const companyOutput = { ...companyInput, ...results };
+
+	Logger.section("Research Results");
+	Logger.log(companyOutput);
+
+	return companyOutput;
+}
+
 export async function researchAllFields(company: string) {
-	console.log(`Starting research for ${company}...`);
-
 	const results = await Promise.all(
 		Object.entries(researchFieldConfiguration).map(
 			async ([field]) =>
@@ -20,16 +33,9 @@ export async function researchAllFields(company: string) {
 		),
 	);
 
-	console.log(`Research completed for ${company}`);
 	return results;
 }
 
-/**
- * Generic function to research a specific field for a company
- * @param company - The company name to research
- * @param field - The field to research (e.g., 'employees', 'eam_tool', etc.)
- * @returns The research result with value, certainty_score, explanation, and sources
- */
 export async function researchCompanyField<
 	TKey extends keyof typeof researchFieldConfiguration,
 >(company: string, field: TKey) {
@@ -46,7 +52,7 @@ export async function researchCompanyField<
 		},
 	});
 
-	console.debug(`LLM response for ${field}:`, response);
+	Logger.debug(`LLM response for ${field}:`, response);
 
 	return parsedOutput;
 }

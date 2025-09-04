@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import z from "zod";
 import type { OutputSchema } from "./prompts.ts";
+import { Logger } from "./logger.ts";
 
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
@@ -32,6 +33,8 @@ export const callLLM = async (args: CallLLMArgs) => {
 			},
 		},
 	});
+
+	Logger.debug("Raw LLM response:", response);
 
 	const json = JSON.parse(response.output_text);
 	const parsedOutput = args.response_schema.schema.parse(json) as OutputSchema;
