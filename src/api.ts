@@ -6,6 +6,7 @@ import {
 	type ExtendedResponseSchema,
 	type ResearchFieldKey,
 } from "./schemas.ts";
+import { SYSTEM_PROMPT } from "./prompts.ts";
 
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
@@ -29,7 +30,10 @@ export const callLLM = async <TKey extends ResearchFieldKey>(
 	const response = await openai.responses.create({
 		model: "gpt-5-mini",
 		tools: [{ type: "web_search_preview" }],
-		input: args.prompt,
+		input: [
+			{ role: "system", content: SYSTEM_PROMPT },
+			{ role: "user", content: args.prompt },
+		],
 		text: {
 			format: {
 				name: args.response_schema.name,

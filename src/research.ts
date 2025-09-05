@@ -1,10 +1,7 @@
 import { callLLM } from "./api.ts";
 import { Logger } from "./logger.ts";
 import { researchFieldConfiguration } from "./prompts.ts";
-import {
-	createExtendedSchema,
-	type ResearchFieldKey,
-} from "./schemas.ts";
+import { createExtendedSchema, type ResearchFieldKey } from "./schemas.ts";
 import type { CompanyInput } from "./types.ts";
 
 export async function researchCompany(companyName: string, domain?: string) {
@@ -29,10 +26,7 @@ export async function researchAllFields(company: string) {
 	const results = await Promise.all(
 		Object.entries(researchFieldConfiguration).map(
 			async ([field]) =>
-				await researchCompanyField(
-					company,
-					field as keyof typeof researchFieldConfiguration,
-				),
+				await researchCompanyField(company, field as ResearchFieldKey),
 		),
 	);
 

@@ -5,6 +5,18 @@ type DataField = {
 	valueSchema: z.ZodTypeAny;
 };
 
+export const SYSTEM_PROMPT = `
+You are a meticulous research assistant.
+
+Given a company name, return the most accurate and recent information you can find using both your existing knowledge and current web search results. 
+
+*Scope & Entity Strategy:* Consider all relevant legal entities and brands under the company, but prioritize the group/holding. Job titles often blur legal boundaries—generalize sensibly to the group.
+
+When any required field cannot be determined with high confidence, return "unknown" as appropriate—do not guess.
+
+Always respond in valid JSON format according to the provided schema.
+`.trim();
+
 export const researchFieldConfiguration = {
 	employees: {
 		prompt: (company) =>
