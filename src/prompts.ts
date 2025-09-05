@@ -1,15 +1,8 @@
 import z from "zod";
-import type { baseResponseSchema } from "./schemas.ts";
 
 type DataField = {
 	prompt: (company: string) => string;
 	valueSchema: z.ZodTypeAny;
-};
-
-export type OutputSchema = z.infer<typeof baseResponseSchema> & {
-	[key in keyof typeof researchFieldConfiguration]: z.infer<
-		(typeof researchFieldConfiguration)[key]["valueSchema"]
-	>;
 };
 
 export const researchFieldConfiguration = {
@@ -46,12 +39,12 @@ export const researchFieldConfiguration = {
 	eam_practice: {
 		prompt: (company) =>
 			`Does ${company} has an enterprise architecture (EA) department? Often also called Business Architecture, something IT-Enterprise-Architecture or Unternehmensarchitektur.`,
-		valueSchema: z.object({ value: z.enum(["established", "unknown"]) }),
+		valueSchema: z.enum(["established", "unknown"]),
 	},
 	itBp_practice: {
 		prompt: (company) =>
 			`Does ${company} have the role of IT Business Partner or IT Demand Manager? Something they are also referred to as IT Business Relation(s)/Relationship(s) Manager or Requirements Engineer.`,
-		valueSchema: z.object({ value: z.enum(["established", "unknown"]) }),
+		valueSchema: z.enum(["established", "unknown"]),
 	},
 	itsm_tool: {
 		prompt: (company) =>
@@ -72,7 +65,7 @@ export const researchFieldConfiguration = {
 	sam_practice: {
 		prompt: (company) =>
 			`Does ${company} have a Software Asset Management (SAM) or IT License Management department?.`,
-		valueSchema: z.object({ value: z.enum(["established", "unknown"]) }),
+		valueSchema: z.enum(["established", "unknown"]),
 	},
 	sam_tool: {
 		prompt: (company) =>

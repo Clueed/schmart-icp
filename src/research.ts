@@ -1,7 +1,10 @@
 import { callLLM } from "./api.ts";
 import { Logger } from "./logger.ts";
 import { researchFieldConfiguration } from "./prompts.ts";
-import { baseResponseSchema } from "./schemas.ts";
+import {
+	createExtendedSchema,
+	type ResearchFieldKey,
+} from "./schemas.ts";
 import type { CompanyInput } from "./types.ts";
 
 export async function researchCompany(companyName: string, domain?: string) {
@@ -36,13 +39,13 @@ export async function researchAllFields(company: string) {
 	return results;
 }
 
-export async function researchCompanyField<
-	TKey extends keyof typeof researchFieldConfiguration,
->(company: string, field: TKey) {
+export async function researchCompanyField<TKey extends ResearchFieldKey>(
+	company: string,
+	field: TKey,
+) {
 	const prompt = researchFieldConfiguration[field].prompt(company);
 
-	const valueSchema = researchFieldConfiguration[field].valueSchema;
-	const schema = baseResponseSchema.extend({ [field]: valueSchema });
+	const schema = createExtendedSchema<TKey>(field);
 
 	const { response, parsedOutput } = await callLLM({
 		prompt,

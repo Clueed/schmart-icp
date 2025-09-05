@@ -8,7 +8,7 @@ export const Logger = (() => {
 		section: (...args: unknown[]) => {
 			console.log(`\n${"=".repeat(20)}`, ...args, `${"=".repeat(20)}\n`);
 		},
-		log: (...args: unknown[]) => Logger.log(...args),
+		log: (...args: unknown[]) => console.log(...args),
 		info: (...args: unknown[]) => console.info(...args),
 		warn: (...args: unknown[]) => console.warn(...args),
 		error: (...args: unknown[]) => console.error(...args),

@@ -1,21 +1,27 @@
 import OpenAI from "openai";
 import z from "zod";
-import type { OutputSchema } from "./prompts.ts";
 import { Logger } from "./logger.ts";
+import {
+	parseResponse,
+	type ExtendedResponseSchema,
+	type ResearchFieldKey,
+} from "./schemas.ts";
 
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 });
 
-interface CallLLMArgs {
+interface CallLLMArgs<TKey extends ResearchFieldKey> {
 	prompt: string;
 	response_schema: {
 		name: string;
-		schema: z.ZodTypeAny;
+		schema: ExtendedResponseSchema<TKey>;
 	};
 }
 
-export const callLLM = async (args: CallLLMArgs) => {
+export const callLLM = async <TKey extends ResearchFieldKey>(
+	args: CallLLMArgs<TKey>,
+) => {
 	const jsonSchema = z.toJSONSchema(args.response_schema.schema, {
 		target: "draft-7",
 	});
@@ -37,7 +43,7 @@ export const callLLM = async (args: CallLLMArgs) => {
 	Logger.debug("Raw LLM response:", response);
 
 	const json = JSON.parse(response.output_text);
-	const parsedOutput = args.response_schema.schema.parse(json) as OutputSchema;
+	const parsedOutput = parseResponse(args.response_schema.name as TKey, json);
 
 	return { response, parsedOutput };
 };

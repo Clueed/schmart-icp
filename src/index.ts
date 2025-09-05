@@ -2,8 +2,6 @@ import "dotenv/config";
 import { Logger } from "./logger.ts";
 import { researchCompany } from "./research.ts";
 
-Logger.debug("🔥 Script loaded successfully!");
-
 async function main() {
 	Logger.debug("Starting main function...");
 	const args = process.argv.slice(2);
@@ -33,5 +31,7 @@ if (
 	process.argv[1]?.includes("index.ts") ||
 	process.argv[1]?.endsWith("index.js")
 ) {
+	Logger.setDebug(false);
+	Logger.debug("🔥 Script loaded successfully!");
 	main();
 }
