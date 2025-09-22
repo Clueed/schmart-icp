@@ -23,10 +23,12 @@ export async function researchCompany(companyName: string, domain?: string) {
 }
 
 export async function researchAllFields(company: string) {
-	const results = await Promise.all(
-		Object.entries(researchFieldConfiguration).map(
-			async ([field]) =>
+	const results = Object.fromEntries(
+		await Promise.all(
+			Object.entries(researchFieldConfiguration).map(async ([field]) => [
+				field,
 				await researchCompanyField(company, field as ResearchFieldKey),
+			]),
 		),
 	);
 
