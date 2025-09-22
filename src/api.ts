@@ -42,6 +42,9 @@ export const callLLM = async <TKey extends ResearchFieldKey>(
 				schema: jsonSchema,
 			},
 		},
+		reasoning: {
+			effort: "minimal",
+		},
 	});
 
 	Logger.debug("Raw LLM response:", response);

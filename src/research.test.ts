@@ -21,9 +21,10 @@ describe("researchCompany", () => {
 
 	it("should research a company and return structured data", async () => {
 		// Mock the callLLM to return different parsedOutput based on the field
+		// biome-ignore lint/suspicious/noExplicitAny: Mock function args
 		vi.mocked(callLLM).mockImplementation(async (args: any) => {
 			const field = args.response_schema.name;
-			let mockData: any = {
+			const mockData: Record<string, unknown> = {
 				explanation: `Mock explanation for ${field}`,
 				certainty_score: 0.9,
 				sources: ["https://example.com"],
@@ -59,8 +60,10 @@ describe("researchCompany", () => {
 			}
 
 			return {
-				response: { output_text: JSON.stringify(mockData) },
-				parsedOutput: mockData,
+				// biome-ignore lint/suspicious/noExplicitAny: Mock return types
+				response: { output_text: JSON.stringify(mockData) } as any,
+				// biome-ignore lint/suspicious/noExplicitAny: Mock return types
+				parsedOutput: mockData as any,
 			};
 		});
 
@@ -68,6 +71,7 @@ describe("researchCompany", () => {
 
 		expect(result).toEqual({
 			name: "Test Company",
+			domain: undefined,
 			employees: {
 				explanation: "Mock explanation for employees",
 				certainty_score: 0.9,
