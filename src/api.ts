@@ -7,6 +7,7 @@ import {
 	type ResearchFieldKey,
 } from "./schemas.ts";
 import { SYSTEM_PROMPT } from "./prompts.ts";
+import { globalTokenTracker } from "./tokenTracker.ts";
 
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
@@ -51,6 +52,18 @@ export const callLLM = async <TKey extends ResearchFieldKey>(
 
 	const json = JSON.parse(response.output_text);
 	const parsedOutput = parseResponse(args.response_schema.name as TKey, json);
+
+	// Track token usage
+	if (response.usage) {
+		globalTokenTracker.addUsage({
+			input_tokens: response.usage.input_tokens,
+			cached_tokens: response.usage.input_tokens_details?.cached_tokens ?? 0,
+			output_tokens: response.usage.output_tokens,
+			reasoning_tokens:
+				response.usage.output_tokens_details?.reasoning_tokens ?? 0,
+			total_tokens: response.usage.total_tokens,
+		});
+	}
 
 	return { response, parsedOutput };
 };

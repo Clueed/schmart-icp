@@ -3,6 +3,7 @@ import { researchCompany } from "./research.ts";
 import { Logger } from "./logger.ts";
 import { callLLM } from "./api.ts";
 import { createCallLLMMock } from "./mocks/api.ts";
+import { globalTokenTracker } from "./tokenTracker.ts";
 
 // Mock OpenAI to prevent instantiation error
 vi.mock("openai", () => ({
@@ -18,6 +19,7 @@ describe("researchCompany", () => {
 	beforeEach(() => {
 		Logger.setDebug(false);
 		vi.clearAllMocks();
+		globalTokenTracker.reset();
 	});
 
 	it("should research a company and return structured data", async () => {
@@ -81,5 +83,17 @@ describe("researchCompany", () => {
 
 		// Verify that callLLM was called 8 times (once for each field)
 		expect(callLLM).toHaveBeenCalledTimes(8);
+
+		// Verify token usage accumulation
+		const summary = globalTokenTracker.getSummary();
+		expect(summary.total_calls).toBe(8);
+		expect(summary.input_tokens).toBe(400); // 8 * 50
+		expect(summary.cached_tokens).toBe(80); // 8 * 10
+		expect(summary.output_tokens).toBe(800); // 8 * 100
+		expect(summary.reasoning_tokens).toBe(160); // 8 * 20
+		expect(summary.total_tokens).toBe(1200); // 8 * 150
+
+		// Log the summary for visibility in test output
+		globalTokenTracker.logSummary();
 	});
 });

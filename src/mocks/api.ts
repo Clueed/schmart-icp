@@ -3,6 +3,7 @@ import type { ResearchFieldKey } from "../schemas.ts";
 import type { ExtendedResponse } from "../schemas.ts";
 import type OpenAI from "openai";
 import type z from "zod";
+import { globalTokenTracker } from "../tokenTracker.ts";
 
 type BaseResponse = z.infer<typeof import("../schemas.ts").baseResponseSchema>;
 
@@ -44,9 +45,29 @@ export const createCallLLMMock = <TKey extends ResearchFieldKey>() => {
 				throw new Error(`Unexpected field: ${field}`);
 		}
 
+		// Add mock usage to tracker
+		globalTokenTracker.addUsage({
+			input_tokens: 50,
+			cached_tokens: 10,
+			output_tokens: 100,
+			reasoning_tokens: 20,
+			total_tokens: 150,
+		});
+
 		return {
 			response: {
 				output_text: JSON.stringify(mockData),
+				usage: {
+					input_tokens: 50,
+					input_tokens_details: {
+						cached_tokens: 10,
+					},
+					output_tokens: 100,
+					output_tokens_details: {
+						reasoning_tokens: 20,
+					},
+					total_tokens: 150,
+				},
 			} as OpenAI.Responses.Response,
 			parsedOutput: mockData as ExtendedResponse<ResearchFieldKey>,
 		};

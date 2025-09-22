@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { Logger } from "./logger.ts";
 import { researchCompany } from "./research.ts";
+import { globalTokenTracker } from "./tokenTracker.ts";
 
 async function main() {
 	Logger.debug("Starting main function...");
@@ -20,6 +21,7 @@ async function main() {
 
 	try {
 		await researchCompany(companyName);
+		globalTokenTracker.logSummary();
 	} catch (error) {
 		Logger.section("❌ Research failed ❌");
 		Logger.error(error);
