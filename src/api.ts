@@ -12,7 +12,7 @@ const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 });
 
-interface CallLLMArgs<TKey extends ResearchFieldKey> {
+export interface CallLLMArgs<TKey extends ResearchFieldKey> {
 	prompt: string;
 	response_schema: {
 		name: string;
