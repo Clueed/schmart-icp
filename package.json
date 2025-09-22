@@ -10,6 +10,7 @@
 		"lint": "biome lint .",
 		"lint:fix": "biome lint --write .",
 		"typecheck": "tsc --noEmit --emitDeclarationOnly false",
+		"ci": "pnpm format:fix && pnpm lint:fix && pnpm typecheck && pnpm test",
 		"test": "vitest",
 		"test:watch": "vitest --watch"
 	},
