@@ -9,7 +9,9 @@
 		"format:fix": "biome format --write . ",
 		"lint": "biome lint .",
 		"lint:fix": "biome lint --write .",
-		"typecheck": "tsc --noEmit --emitDeclarationOnly false"
+		"typecheck": "tsc --noEmit --emitDeclarationOnly false",
+		"test": "vitest",
+		"test:watch": "vitest --watch"
 	},
 	"keywords": [],
 	"author": "",
@@ -17,7 +19,8 @@
 	"packageManager": "pnpm@10.11.0",
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.2",
-		"@types/node": "^24.3.0"
+		"@types/node": "^24.3.0",
+		"vitest": "^3.2.4"
 	},
 	"dependencies": {
 		"dotenv": "^17.2.1",
