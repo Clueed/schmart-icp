@@ -141,7 +141,10 @@ describe("Integration - JSON file batch processing", () => {
 		vi.mocked(fs.existsSync).mockReturnValue(false);
 
 		const { researchCompany } = await import("./research.ts");
-		vi.mocked(researchCompany).mockResolvedValue(undefined);
+		vi.mocked(researchCompany).mockResolvedValue({
+			name: "missing.json",
+			"icp research summary": "Test summary",
+		} as any);
 
 		const { globalTokenTracker } = await import("./tokenTracker.ts");
 		vi.mocked(globalTokenTracker.logSummary).mockImplementation(() => {});

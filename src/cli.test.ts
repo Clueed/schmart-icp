@@ -42,7 +42,10 @@ describe("main function", () => {
 		process.argv = ["node", "index.ts", "Siemens Energy"];
 
 		const { researchCompany } = await import("./research.ts");
-		vi.mocked(researchCompany).mockResolvedValue(undefined);
+		vi.mocked(researchCompany).mockResolvedValue({
+			name: "Siemens Energy",
+			"icp research summary": "Test summary",
+		} as any);
 
 		const { globalTokenTracker } = await import("./tokenTracker.ts");
 		vi.mocked(globalTokenTracker.logSummary).mockImplementation(() => {});
