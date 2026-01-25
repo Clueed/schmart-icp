@@ -1,0 +1,17 @@
+[
+	{
+		"Company Name": "Siemens Energy",
+		"Websites": ["siemens-energy.com", "siemens.com"],
+		"Region": "Germany"
+	},
+	{
+		"Company Name": "General Electric",
+		"Websites": ["ge.com"],
+		"Region": "United States"
+	},
+	{
+		"Company Name": "ABB Ltd",
+		"Websites": ["abb.com"],
+		"Region": "Switzerland"
+	}
+]

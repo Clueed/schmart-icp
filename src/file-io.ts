@@ -1,6 +1,10 @@
 import fs from "node:fs";
+import type { KeyMappingConfig } from "./config.ts";
 import { Logger } from "./logger.ts";
-import { CompanyInputArraySchema } from "./schemas.ts";
+import {
+	CompanyInputArraySchema,
+	createCompanyInputArraySchema,
+} from "./schemas.ts";
 import type { CompanyInputArray } from "./types.ts";
 
 /**
@@ -24,13 +28,22 @@ export function isJsonFile(filePath: string): boolean {
  * Reads and parses a JSON file containing company data.
  * Validates the parsed data against the CompanyInputArraySchema.
  * @param filePath - Path to the JSON file
+ * @param config - Key mapping configuration for dynamic schema validation
  * @returns Parsed and validated array of company inputs
  * @throws Error if file doesn't exist, contains invalid JSON, or fails schema validation
  */
-export function readJsonFile(filePath: string): CompanyInputArray {
+export function readJsonFile(
+	filePath: string,
+	config?: KeyMappingConfig,
+): CompanyInputArray {
 	const fileContent = fs.readFileSync(filePath, "utf-8");
 	const parsedData = JSON.parse(fileContent);
-	return CompanyInputArraySchema.parse(parsedData) as CompanyInputArray;
+
+	const schema = config
+		? createCompanyInputArraySchema(config)
+		: CompanyInputArraySchema;
+
+	return schema.parse(parsedData) as CompanyInputArray;
 }
 
 /**

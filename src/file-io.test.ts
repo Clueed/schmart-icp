@@ -244,6 +244,154 @@ describe("readJsonFile function", () => {
 		expect(result[2].name).toBe("Café Müller GmbH");
 		expect(result[3].name).toBe("株式会社");
 	});
+
+	it("should parse JSON with custom nameKey configuration", () => {
+		const customJson =
+			'[{"Company Name": "Test Company"}, {"Company Name": "Another Company"}]';
+		vi.mocked(fs.readFileSync).mockReturnValue(customJson);
+
+		const result = readJsonFile("companies.json", {
+			nameKey: "Company Name",
+			domainKey: "domain",
+		});
+
+		expect(result).toHaveLength(2);
+		expect(result[0]["Company Name"]).toBe("Test Company");
+		expect(result[1]["Company Name"]).toBe("Another Company");
+	});
+
+	it("should parse JSON with custom domainKey configuration", () => {
+		const customJson =
+			'[{"name": "Company1", "Website": "company1.com"}, {"name": "Company2", "Website": "company2.com"}]';
+		vi.mocked(fs.readFileSync).mockReturnValue(customJson);
+
+		const result = readJsonFile("companies.json", {
+			nameKey: "name",
+			domainKey: "Website",
+		});
+
+		expect(result).toHaveLength(2);
+		expect(result[0].name).toBe("Company1");
+		expect(result[0].Website).toBe("company1.com");
+		expect(result[1].name).toBe("Company2");
+		expect(result[1].Website).toBe("company2.com");
+	});
+
+	it("should parse JSON with both custom nameKey and domainKey", () => {
+		const customJson =
+			'[{"Company Name": "Test Company", "Website": "test.com"}, {"Company Name": "Another", "Website": "another.com"}]';
+		vi.mocked(fs.readFileSync).mockReturnValue(customJson);
+
+		const result = readJsonFile("companies.json", {
+			nameKey: "Company Name",
+			domainKey: "Website",
+		});
+
+		expect(result).toHaveLength(2);
+		expect(result[0]["Company Name"]).toBe("Test Company");
+		expect(result[0].Website).toBe("test.com");
+		expect(result[1]["Company Name"]).toBe("Another");
+		expect(result[1].Website).toBe("another.com");
+	});
+
+	it("should parse JSON without config (backward compatibility)", () => {
+		const defaultJson = '[{"name": "Company1", "domain": "company1.com"}]';
+		vi.mocked(fs.readFileSync).mockReturnValue(defaultJson);
+
+		const result = readJsonFile("companies.json");
+
+		expect(result).toHaveLength(1);
+		expect(result[0].name).toBe("Company1");
+		expect(result[0].domain).toBe("company1.com");
+	});
+
+	it("should throw error for JSON missing custom nameKey field", () => {
+		const missingNameJson =
+			'[{"other": "value"}, {"Company Name": "Valid Company"}]';
+		vi.mocked(fs.readFileSync).mockReturnValue(missingNameJson);
+
+		expect(() =>
+			readJsonFile("companies.json", {
+				nameKey: "Company Name",
+				domainKey: "domain",
+			}),
+		).toThrow();
+	});
+
+	it("should handle empty custom domainKey field", () => {
+		const emptyDomainJson =
+			'[{"Company Name": "Test Company", "Website": ""}, {"Company Name": "Another Company"}]';
+		vi.mocked(fs.readFileSync).mockReturnValue(emptyDomainJson);
+
+		const result = readJsonFile("companies.json", {
+			nameKey: "Company Name",
+			domainKey: "Website",
+		});
+
+		expect(result[0].Website).toBe("");
+		expect(result[1].Website).toBeUndefined();
+	});
+
+	it("should preserve extra keys with custom configuration", () => {
+		const customJson =
+			'[{"Company Name": "Test Company", "Website": "test.com", "Region": "US", "Rank": 1}]';
+		vi.mocked(fs.readFileSync).mockReturnValue(customJson);
+
+		const result = readJsonFile("companies.json", {
+			nameKey: "Company Name",
+			domainKey: "Website",
+		});
+
+		expect(result[0]).toMatchObject({
+			"Company Name": "Test Company",
+			Website: "test.com",
+			Region: "US",
+			Rank: 1,
+		});
+	});
+
+	it("should handle special characters in custom key names", () => {
+		const specialKeysJson =
+			'[{"Company Name": "Test Company", "Website": "test.com"}, {"Company Name": "O\'Connor Inc.", "Website": "oconnor.com"}]';
+		vi.mocked(fs.readFileSync).mockReturnValue(specialKeysJson);
+
+		const result = readJsonFile("companies.json", {
+			nameKey: "Company Name",
+			domainKey: "Website",
+		});
+
+		expect(result).toHaveLength(2);
+		expect(result[0]["Company Name"]).toBe("Test Company");
+		expect(result[1]["Company Name"]).toBe("O'Connor Inc.");
+	});
+
+	it("should throw error for null value in custom nameKey", () => {
+		const nullNameJson =
+			'[{"Company Name": null}, {"Company Name": "Valid Company"}]';
+		vi.mocked(fs.readFileSync).mockReturnValue(nullNameJson);
+
+		expect(() =>
+			readJsonFile("companies.json", {
+				nameKey: "Company Name",
+				domainKey: "domain",
+			}),
+		).toThrow();
+	});
+
+	it("should not throw error for empty string in custom nameKey (schema validation)", () => {
+		const emptyNameJson =
+			'[{"Company Name": ""}, {"Company Name": "Valid Company"}]';
+		vi.mocked(fs.readFileSync).mockReturnValue(emptyNameJson);
+
+		// Schema only checks for string type, not empty values
+		const result = readJsonFile("companies.json", {
+			nameKey: "Company Name",
+			domainKey: "domain",
+		});
+		expect(result).toHaveLength(2);
+		expect(result[0]["Company Name"]).toBe("");
+		expect(result[1]["Company Name"]).toBe("Valid Company");
+	});
 });
 
 describe("writeResults function", () => {

@@ -76,4 +76,137 @@ describe("main function", () => {
 		expect(researchCompany).toHaveBeenCalledWith("Company1", "company1.com");
 		expect(globalTokenTracker.logSummary).toHaveBeenCalled();
 	});
+
+	it("should process JSON file with custom --name-key and --domain-key flags", async () => {
+		process.argv = [
+			"node",
+			"index.ts",
+			"companies.json",
+			"--name-key",
+			"Company Name",
+			"--domain-key",
+			"Website",
+		];
+		vi.mocked(fs.existsSync).mockReturnValue(true);
+		vi.mocked(fs.readFileSync).mockReturnValue(
+			'[{"Company Name": "Test Company", "Website": "test.com"}]',
+		);
+
+		const { researchCompany } = await import("./research.ts");
+		vi.mocked(researchCompany).mockResolvedValue({
+			name: "Test Company",
+			domain: "test.com",
+			industry: "Tech",
+		} as never);
+
+		const { globalTokenTracker } = await import("./tokenTracker.ts");
+		vi.mocked(globalTokenTracker.logSummary).mockImplementation(() => {});
+
+		await main();
+
+		expect(researchCompany).toHaveBeenCalledWith("Test Company", "test.com");
+		expect(globalTokenTracker.logSummary).toHaveBeenCalled();
+	});
+
+	it("should process JSON file with only --name-key flag (default domain)", async () => {
+		process.argv = [
+			"node",
+			"index.ts",
+			"companies.json",
+			"--name-key",
+			"Company Name",
+		];
+		vi.mocked(fs.existsSync).mockReturnValue(true);
+		vi.mocked(fs.readFileSync).mockReturnValue(
+			'[{"Company Name": "Test Company", "domain": "test.com"}]',
+		);
+
+		const { researchCompany } = await import("./research.ts");
+		vi.mocked(researchCompany).mockResolvedValue({
+			name: "Test Company",
+			domain: "test.com",
+			industry: "Tech",
+		} as never);
+
+		const { globalTokenTracker } = await import("./tokenTracker.ts");
+		vi.mocked(globalTokenTracker.logSummary).mockImplementation(() => {});
+
+		await main();
+
+		expect(researchCompany).toHaveBeenCalledWith("Test Company", "test.com");
+		expect(globalTokenTracker.logSummary).toHaveBeenCalled();
+	});
+
+	it("should process JSON file without flags (backward compatibility)", async () => {
+		process.argv = ["node", "index.ts", "companies.json"];
+		vi.mocked(fs.existsSync).mockReturnValue(true);
+		vi.mocked(fs.readFileSync).mockReturnValue(
+			'[{"name": "Test Company", "domain": "test.com"}]',
+		);
+
+		const { researchCompany } = await import("./research.ts");
+		vi.mocked(researchCompany).mockResolvedValue({
+			name: "Test Company",
+			domain: "test.com",
+			industry: "Tech",
+		} as never);
+
+		const { globalTokenTracker } = await import("./tokenTracker.ts");
+		vi.mocked(globalTokenTracker.logSummary).mockImplementation(() => {});
+
+		await main();
+
+		expect(researchCompany).toHaveBeenCalledWith("Test Company", "test.com");
+		expect(globalTokenTracker.logSummary).toHaveBeenCalled();
+	});
+
+	it("should handle invalid JSON with custom keys and exit with code 1", async () => {
+		process.argv = [
+			"node",
+			"index.ts",
+			"companies.json",
+			"--name-key",
+			"Company Name",
+		];
+		vi.mocked(fs.existsSync).mockReturnValue(true);
+		vi.mocked(fs.readFileSync).mockReturnValue('{"name": "Company", invalid}');
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
+			throw new Error(`process.exit(${code})`);
+		});
+
+		const { Logger } = await import("./logger.ts");
+
+		await expect(main()).rejects.toThrow("process.exit(1)");
+		expect(exitSpy).toHaveBeenCalledWith(1);
+		expect(Logger.error).toHaveBeenCalled();
+
+		exitSpy.mockRestore();
+	});
+
+	it("should handle missing required custom key field and exit with code 1", async () => {
+		process.argv = [
+			"node",
+			"index.ts",
+			"companies.json",
+			"--name-key",
+			"Company Name",
+		];
+		vi.mocked(fs.existsSync).mockReturnValue(true);
+		vi.mocked(fs.readFileSync).mockReturnValue(
+			'[{"name": "Test Company", "domain": "test.com"}]',
+		);
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
+			throw new Error(`process.exit(${code})`);
+		});
+
+		const { Logger } = await import("./logger.ts");
+
+		await expect(main()).rejects.toThrow("process.exit(1)");
+		expect(exitSpy).toHaveBeenCalledWith(1);
+		expect(Logger.error).toHaveBeenCalled();
+
+		exitSpy.mockRestore();
+	});
 });

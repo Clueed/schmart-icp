@@ -47,6 +47,8 @@ export function parseResponse<K extends ResearchFieldKey>(
 	return schema.parse(data) as ExtendedResponse<K>;
 }
 
+import type { KeyMappingConfig } from "./config.ts";
+
 export const CompanyInputArraySchema = z.array(
 	z
 		.object({
@@ -54,3 +56,15 @@ export const CompanyInputArraySchema = z.array(
 		})
 		.passthrough(),
 );
+
+export function createCompanyInputArraySchema(
+	config: KeyMappingConfig,
+): z.ZodType<Array<Record<string, unknown>>> {
+	return z.array(
+		z
+			.object({
+				[config.nameKey]: z.string(),
+			})
+			.passthrough(),
+	);
+}
