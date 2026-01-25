@@ -7,48 +7,6 @@
 import fs from "node:fs";
 import { Logger } from "../logger.ts";
 
-interface CompanyRow {
-	"HitHorizons ID": string;
-	"Company Name": string;
-	"Secondary Name"?: string;
-	"Street Address"?: string;
-	"Post Code"?: string;
-	Town?: string;
-	"State / Province"?: string;
-	Country: string;
-	Region: string;
-	"National ID"?: string;
-	"National ID Type Code"?: string;
-	"National ID Type Text"?: string;
-	"SIC Code"?: string;
-	"SIC Text"?: string;
-	Industry?: string;
-	"Local Activity Code"?: string;
-	"Local Activity Text"?: string;
-	"Local Activity Code Type"?: string;
-	"Local Activity Code Type Text"?: string;
-	"TOP Product Keywords"?: string;
-	"Establishment of Ownership"?: string;
-	"Sales in EUR"?: string;
-	"Sales Accuracy Indicator"?: string;
-	"Sales Size Ranking"?: string;
-	"Employees Number"?: string;
-	"Employees Number Accuracy Indicator"?: string;
-	"Employees Size Ranking"?: string;
-	"Company Type"?: string;
-	"Location Type"?: string;
-	"Company Profile"?: string;
-	Websites?: string;
-	"Email Domains"?: string;
-	"LinkedIn Profile"?: string;
-	"Facebook Profile"?: string;
-	"Instagram Profile"?: string;
-	"TikTok Profile"?: string;
-	"X Profile"?: string;
-	"YouTube Channel"?: string;
-	"GitHub Profile"?: string;
-}
-
 /**
  * Parses a CSV line, handling quoted fields properly.
  */
@@ -113,46 +71,14 @@ function readCSV(filePath: string): Array<Record<string, string>> {
 	return records;
 }
 
-/**
- * Converts a CSV company record to a simplified format.
- */
-function simplifyCompanyRecord(record: CompanyRow): Record<string, unknown> {
-	return {
-		id: record["HitHorizons ID"],
-		name: record["Company Name"],
-		secondaryName: record["Secondary Name"] || null,
-		address: record["Street Address"] || null,
-		postCode: record["Post Code"] || null,
-		town: record["Town"] || null,
-		stateProvince: record["State / Province"] || null,
-		country: record.Country,
-		region: record.Region,
-		nationalId: record["National ID"] || null,
-		nationalIdType: record["National ID Type Text"] || null,
-		sicCode: record["SIC Code"] || null,
-		sicText: record["SIC Text"] || null,
-		industry: record.Industry || null,
-		topProductKeywords: record["TOP Product Keywords"] || null,
-		establishmentYear: record["Establishment of Ownership"] || null,
-		salesEUR: record["Sales in EUR"] || null,
-		salesAccuracy: record["Sales Accuracy Indicator"] || null,
-		salesRanking: record["Sales Size Ranking"] || null,
-		employeesNumber: record["Employees Number"] || null,
-		employeesAccuracy: record["Employees Number Accuracy Indicator"] || null,
-		employeesRanking: record["Employees Size Ranking"] || null,
-		companyType: record["Company Type"] || null,
-		locationType: record["Location Type"] || null,
-		companyProfile: record["Company Profile"] || null,
-		websites: record["Websites"] || null,
-		emailDomains: record["Email Domains"] || null,
-		linkedin: record["LinkedIn Profile"] || null,
-		facebook: record["Facebook Profile"] || null,
-		instagram: record["Instagram Profile"] || null,
-		tiktok: record["TikTok Profile"] || null,
-		xProfile: record["X Profile"] || null,
-		youtube: record["YouTube Channel"] || null,
-		github: record["GitHub Profile"] || null,
-	};
+function convertEmptyStringsToNull(
+	record: Record<string, string>,
+): Record<string, string | null> {
+	const result: Record<string, string | null> = {};
+	for (const [key, value] of Object.entries(record)) {
+		result[key] = value === "" ? null : value;
+	}
+	return result;
 }
 
 /**
@@ -187,7 +113,7 @@ async function main() {
 	}
 
 	Logger.log(`Reading CSV file: ${csvPath}`);
-	const records = readCSV(csvPath) as unknown as CompanyRow[];
+	const records = readCSV(csvPath);
 	Logger.log(`Found ${records.length} companies in CSV`);
 
 	if (records.length < 100) {
@@ -198,7 +124,7 @@ async function main() {
 
 	// Shuffle and take first 100
 	const shuffled = shuffleArray(records);
-	const sample = shuffled.slice(0, 100).map(simplifyCompanyRecord);
+	const sample = shuffled.slice(0, 100).map(convertEmptyStringsToNull);
 
 	// Write to JSON file
 	Logger.log(`Writing ${sample.length} companies to JSON file: ${outputPath}`);
