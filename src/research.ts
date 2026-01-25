@@ -1,6 +1,7 @@
 import { callLLM } from "./api.ts";
 import { Logger } from "./logger.ts";
 import { researchFieldConfiguration } from "./prompts.ts";
+import { generateResearchSummary } from "./research-summary.ts";
 import { createExtendedSchema, type ResearchFieldKey } from "./schemas.ts";
 import type { CompanyInput } from "./types.ts";
 
@@ -14,7 +15,11 @@ export async function researchCompany(companyName: string, domain?: string) {
 	};
 
 	const results = await researchAllFields(companyName);
-	const companyOutput = { ...companyInput, ...results };
+	const companyOutput = {
+		...companyInput,
+		...results,
+		"icp research summary": generateResearchSummary(results),
+	};
 
 	Logger.section("Research Results");
 	Logger.log(companyOutput);
