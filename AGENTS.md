@@ -1,5 +1,7 @@
 # Agent Guidelines for schmart-icp
 
+ALWAYS USE PNPM.
+
 ## Commands
 - **Build/Run**: `pnpm dev`
 - **Lint**: `pnpm lint` / `pnpm lint:fix`
