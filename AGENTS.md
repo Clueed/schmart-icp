@@ -9,7 +9,7 @@ ALWAYS USE PNPM.
 - **Typecheck**: `pnpm typecheck`
 - **Test all**: `pnpm test`
 - **Test single file**: `vitest run src/<filename>.test.ts`
-- **CI**: `pnpm ci` (format + lint + typecheck + test)
+- **CI**: `pnpm run ci` (format + lint + typecheck + test)
 
 ## Code Style
 - **Language**: TypeScript with strict mode enabled
