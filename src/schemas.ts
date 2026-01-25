@@ -1,4 +1,5 @@
 import z from "zod";
+import type { KeyMappingConfig } from "./config.ts";
 import { researchFieldConfiguration } from "./prompts.ts";
 
 export const baseResponseSchema = z.object({
@@ -25,7 +26,7 @@ export type ExtendedResponseSchema<K extends ResearchFieldKey> = z.ZodObject<
 export type ExtendedResponse<K extends ResearchFieldKey> = z.infer<
 	typeof baseResponseSchema
 > & {
-	[P in K]: ExtractZodType<ResearchFieldConfig[P]["valueSchema"]>;
+	[P in K]: ExtractZodType<ResearchFieldConfig[K]["valueSchema"]>;
 };
 
 // Runtime helper function to create extended schema
@@ -46,8 +47,6 @@ export function parseResponse<K extends ResearchFieldKey>(
 	const schema = createExtendedSchema(fieldKey);
 	return schema.parse(data) as ExtendedResponse<K>;
 }
-
-import type { KeyMappingConfig } from "./config.ts";
 
 export const CompanyInputArraySchema = z.array(
 	z

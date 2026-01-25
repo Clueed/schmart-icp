@@ -2,22 +2,18 @@ import OpenAI from "openai";
 import z from "zod";
 import { Logger } from "./logger.ts";
 import { SYSTEM_PROMPT } from "./prompts.ts";
-import {
-	type ExtendedResponseSchema,
-	type ResearchFieldKey,
-	parseResponse,
-} from "./schemas.ts";
+import { parseResponse, type ResearchFieldKey } from "./schemas.ts";
 import { globalTokenTracker } from "./tokenTracker.ts";
 
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 });
 
-export interface CallLLMArgs<TKey extends ResearchFieldKey> {
+export interface CallLLMArgs<_TKey extends ResearchFieldKey> {
 	prompt: string;
 	response_schema: {
 		name: string;
-		schema: ExtendedResponseSchema<TKey>;
+		schema: z.ZodTypeAny;
 	};
 }
 
