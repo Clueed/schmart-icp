@@ -1,26 +1,55 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/alpine
 {
-	"name": "open canvas",
-	"image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
-	"postCreateCommand": "npm install -g @anthropic-ai/claude-code &&  npm install -g @musistudio/claude-code-router",
-	"remoteUser": "node",
-	"features": {
-		"ghcr.io/meaningful-ooo/devcontainer-features/fish:2": {}
-	},
-	"mounts": [
-		{
-			"source": "${localWorkspaceFolder}/.home-dir-map/.claude-code-router",
-			"target": "/home/node/.claude-code-router",
-			"type": "bind"
-		},
-		{
-			"source": "${localWorkspaceFolder}/.home-dir-map/.claude",
-			"target": "/home/node/.claude",
-			"type": "bind"
-		},
-		{
-			"source": "${localWorkspaceFolder}/.home-dir-map/.claude.json",
-			"target": "/home/node/.claude.json",
-			"type": "bind"
-		}
-	]
+  "name": "bunny-ears_dev",
+  "image": "mcr.microsoft.com/devcontainers/base:debian",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "biomejs.biome",
+        "donjayamanne.githistory",
+        "eamodio.gitlens",
+        "WooodHead.glean-react-refactor",
+        "VisualStudioExptTeam.vscodeintellicode",
+        "folke.vscode-monorepo-workspace",
+        "YoavBls.pretty-ts-errors",
+        "bradlc.vscode-tailwindcss",
+        "mxsdev.typescript-explorer",
+        "ms-vscode-remote.remote-containers",
+        "Supermaven.supermaven",
+        "pmndrs.pmndrs"
+      ]
+    }
+  },
+
+  "features": {
+    "ghcr.io/meaningful-ooo/devcontainer-features/fish:2": {},
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Application",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postCreateCommand": ". ${NVM_DIR}/nvm.sh && nvm install && pnpm install && pnpm install -g opencode-ai",
+
+  "remoteUser": "vscode",
+
+  "mounts": [
+    {
+      "source": "${localEnv:HOME}/.gitconfig",
+      "target": "/home/vscode/.gitconfig",
+      "type": "bind"
+    },
+    {
+      "type": "volume",
+      "source": "pnpm-store",
+      "target": "/home/vscode/.pnpm-store"
+    }
+  ]
 }
