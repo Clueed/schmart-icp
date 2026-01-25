@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "agents": {
+    "oracle": { "model": "zai-coding-plan/glm-4.7" },           
+    "librarian": { "model": "zai-coding-plan/glm-4.7" }, 
+    "explore": { "model": "zai-coding-plan/glm-4.7" },
+    "atlas": {"model": "zai-coding-plan/glm-4.7"},
+    "metis": {"model": "zai-coding-plan/glm-4.7"},
+    "momus": {"model": "zai-coding-plan/glm-4.7"},
+    "build": {"model": "zai-coding-plan/glm-4.7"},
+    "multimodal-looker": {"model": "zai-coding-plan/glm-4.6V"},
+    "plan": {"model": "zai-coding-plan/glm-4.7"},
+    "OpenCode-Builder": {"model": "zai-coding-plan/glm-4.7"},
+    "prometheus": {"model": "zai-coding-plan/glm-4.7"},
+    "sisyphus": {"model": "zai-coding-plan/glm-4.7"},
+    "sisyphus-junior": {"model": "zai-coding-plan/glm-4.7"} 
+  },
+  "categories": {
+    "visual": { "model": "zai-coding-plan/glm-4.6V" },
+    "business-logic": { "model": "zai-coding-plan/glm-4.7"},
+    "visual-engineering": { "model": "zai-coding-plan/glm-4.6V"},
+    "ultrabrain": { "model": "zai-coding-plan/glm-4.7"},
+    "artistry": { "model": "zai-coding-plan/glm-4.7"},
+    "quick": { "model": "zai-coding-plan/glm-4.7"},
+    "unspecified-low": { "model": "zai-coding-plan/glm-4.7"},
+    "unspecified-high": { "model": "zai-coding-plan/glm-4.7"},
+    "writing": { "model": "zai-coding-plan/glm-4.7"}
+  }
+}
