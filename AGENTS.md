@@ -15,14 +15,14 @@ ALWAYS USE PNPM.
 ## Code Style
 - **Language**: TypeScript with strict mode enabled
 - **Modules**: ES modules (type: "module" in package.json)
-- **Imports**: Include `.ts` extensions, Biome auto-organizes (don't manually sort)
+- **Imports**: Include `.ts` extensions, Biome auto-organizes imports
 - **Formatting**: Tabs for indentation, double quotes (Biome enforced)
 - **Naming Conventions**:
   - Types/Interfaces: PascalCase (e.g., `CompanyInput`, `KeyMappingConfig`)
   - Functions/Variables: camelCase (e.g., `normalizeCompanyInput`, `rawCompany`)
-  - Constants: UPPERCASE_SNAKE_CASE (e.g., `DEFAULT_KEY_MAPPING`, `SYSTEM_PROMPT`)
-- **Comments**: JSDoc-style for all exported functions (with @param, @returns, @throws)
-- **Error Handling**: Throw descriptive errors, use Logger for output
+  - Constants: PascalCase for schemas (e.g., `baseResponseSchema`), UPPER_CASE for config (e.g., `DEFAULT_KEY_MAPPING`, `SYSTEM_PROMPT`)
+- **Comments**: JSDoc-style for exported functions (include @param, @returns, @throws)
+- **Error Handling**: Throw descriptive errors with context, use Logger for output
 - **Validation**: Use Zod schemas for all external/untrusted data (JSON parsing, API responses)
 - **Testing**: Vitest with describe/it blocks, comprehensive edge case coverage
 - **Async**: Prefer async/await, use Promise.all for parallel operations
@@ -30,15 +30,15 @@ ALWAYS USE PNPM.
 
 ## Dependencies & Patterns
 - **OpenAI API**: Use `openai` package, track token usage via globalTokenTracker
-- **CLI**: yargs for argument parsing, provide examples and help text
+- **CLI**: yargs for argument parsing with examples and help text
 - **Config**: dotenv for environment variables (.env in .gitignore)
 - **File I/O**: Validate JSON files against Zod schemas before use
-- **Logger**: Use Logger.debug/section/log/info/warn/error instead of console directly
+- **Logger**: Use Logger.debug/section/log/info/warn/error instead of console
 
 ## File Organization
-- Source: `src/*.ts`, Tests: `src/*.test.ts` (co-located)
-- Export from `index.ts` when needed for external consumers
-- Main entry point: `src/index.ts` loads dotenv and calls main()
+- Source: `src/*.ts`, Tests: `src/*.test.ts` (co-located, flat structure)
+- Export from `index.ts` for external consumers
+- Entry point: `src/index.ts` loads dotenv and calls main()
 
 ## Implementation Patterns
 
@@ -106,23 +106,6 @@ export type ExtractZodType<T> = T extends z.ZodType<infer U> ? U : never;
 - Mock external dependencies (file system, API calls)
 - Co-locate tests with source files (`module.ts` → `module.test.ts`)
 
-### Test Example
-```typescript
-import { describe, expect, it } from "vitest";
-import { myFunction } from "./module.js";
-
-describe("myFunction", () => {
-  it("should handle normal input", () => {
-    const result = myFunction("valid input");
-    expect(result).toBe("expected");
-  });
-
-  it("should throw on invalid input", () => {
-    expect(() => myFunction("")).toThrow("cannot be empty");
-  });
-});
-```
-
 ## Architecture & Module Responsibilities
 
 ### Core Modules
@@ -134,8 +117,10 @@ describe("myFunction", () => {
 - **file-io.ts**: File reading/writing with validation
 - **cli.ts**: CLI argument parsing and main program flow
 - **logger.ts**: Centralized logging with debug toggle
-- **processor.ts**: Batch processing of company arrays
-- **tokenTracker.ts**: Token usage tracking across API calls
+- **processor.ts**: Batch processing with concurrency control
+- **tokenTracker.ts**: Token usage and cost tracking across API calls
+- **prompts.ts**: Field configuration and prompt templates
+- **types.ts**: TypeScript type definitions
 
 ### Research Flow Pattern
 ```typescript
@@ -183,9 +168,10 @@ const argv = await yargs(hideBin(process.argv))
 - Use `.passthrough()` on object schemas to preserve extra fields
 
 ### Error Handling Flow
-- Use try/catch in main functions (cli.ts, file-io.ts)
+- Use try/catch in main functions (cli.ts, file-io.ts, processor.ts)
 - Log errors with `Logger.error` and exit with non-zero code
 - Throw descriptive errors with context from validation layers
+- In processor.ts, catch individual company errors and continue batch
 
 ### Environment Variables
 - Load dotenv at entry point (`src/index.ts` imports `dotenv/config`)
