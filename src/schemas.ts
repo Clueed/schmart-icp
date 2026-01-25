@@ -46,3 +46,11 @@ export function parseResponse<K extends ResearchFieldKey>(
 	const schema = createExtendedSchema(fieldKey);
 	return schema.parse(data) as ExtendedResponse<K>;
 }
+
+export const CompanyInputArraySchema = z.array(
+	z
+		.object({
+			name: z.string(),
+		})
+		.passthrough(),
+);
