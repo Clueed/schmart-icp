@@ -197,4 +197,61 @@ describe("processCompanyArray function", () => {
 			industry: "Healthcare",
 		});
 	});
+
+	it("should throw when concurrency < 1", async () => {
+		const companies: CompanyInputArray = [{ name: "Test" }];
+		await expect(processCompanyArray(companies, undefined, 0)).rejects.toThrow(
+			"concurrency must be at least 1",
+		);
+	});
+
+	it("should handle concurrency = 1 correctly (sequential processing)", async () => {
+		const companies: CompanyInputArray = [
+			{ name: "First", domain: "first.com" },
+			{ name: "Second", domain: "second.com" },
+			{ name: "Third", domain: "third.com" },
+		];
+
+		const { researchCompany } = await import("./research.ts");
+		const mockResults = [
+			{ name: "First", domain: "first.com", rank: 1 },
+			{ name: "Second", domain: "second.com", rank: 2 },
+			{ name: "Third", domain: "third.com", rank: 3 },
+		];
+		vi.mocked(researchCompany)
+			.mockResolvedValueOnce(mockResults[0] as never)
+			.mockResolvedValueOnce(mockResults[1] as never)
+			.mockResolvedValueOnce(mockResults[2] as never);
+
+		const result = await processCompanyArray(companies, undefined, 1);
+
+		expect(researchCompany).toHaveBeenCalledTimes(3);
+		expect(result).toHaveLength(3);
+		expect(result[0]).toEqual(mockResults[0]);
+		expect(result[1]).toEqual(mockResults[1]);
+		expect(result[2]).toEqual(mockResults[2]);
+	});
+
+	it("should handle array smaller than concurrency", async () => {
+		const companies: CompanyInputArray = [
+			{ name: "Small1", domain: "small1.com" },
+			{ name: "Small2", domain: "small2.com" },
+		];
+
+		const { researchCompany } = await import("./research.ts");
+		const mockResults = [
+			{ name: "Small1", domain: "small1.com", industry: "Tech" },
+			{ name: "Small2", domain: "small2.com", industry: "Finance" },
+		];
+		vi.mocked(researchCompany)
+			.mockResolvedValueOnce(mockResults[0] as never)
+			.mockResolvedValueOnce(mockResults[1] as never);
+
+		const result = await processCompanyArray(companies, undefined, 10);
+
+		expect(researchCompany).toHaveBeenCalledTimes(2);
+		expect(result).toHaveLength(2);
+		expect(result[0]).toEqual(mockResults[0]);
+		expect(result[1]).toEqual(mockResults[1]);
+	});
 });
