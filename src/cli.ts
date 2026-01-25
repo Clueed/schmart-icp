@@ -50,16 +50,26 @@ export async function main() {
 	if (isJsonFile(input)) {
 		Logger.section(`Batch Processing - ${input}`);
 
+		let results: Array<Record<string, unknown>>;
+
 		try {
 			const companies = readJsonFile(input, config);
-			const results = await processCompanyArray(companies, config);
-			writeResults(input, results);
-			globalTokenTracker.logSummary();
-		} catch (error) {
+			results = await processCompanyArray(companies, config);
+		} catch (readOrProcessError) {
 			Logger.section("❌ Batch processing failed ❌");
-			Logger.error(error);
+			Logger.error(readOrProcessError);
 			process.exit(1);
 		}
+
+		try {
+			writeResults(input, results);
+		} catch (writeError) {
+			Logger.error("❌ Failed to write results file");
+			Logger.error(writeError);
+			process.exit(1);
+		}
+
+		globalTokenTracker.logSummary();
 	} else {
 		Logger.section(`Research - ${input}`);
 

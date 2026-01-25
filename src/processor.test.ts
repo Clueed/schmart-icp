@@ -155,4 +155,46 @@ describe("processCompanyArray function", () => {
 		expect(result[0].name).toBe("NoDomain");
 		expect(result[1].name).toBe("HasDomain");
 	});
+
+	it("should continue processing when one company fails", async () => {
+		const companies: CompanyInputArray = [
+			{ name: "SuccessCompany", domain: "success.com" },
+			{ name: "FailCompany", domain: "fail.com" },
+			{ name: "AnotherSuccess", domain: "another.com" },
+		];
+
+		const { researchCompany } = await import("./research.ts");
+		vi.mocked(researchCompany)
+			.mockResolvedValueOnce({
+				name: "SuccessCompany",
+				domain: "success.com",
+				industry: "Tech",
+			} as never)
+			.mockRejectedValueOnce(new Error("API rate limit exceeded") as never)
+			.mockResolvedValueOnce({
+				name: "AnotherSuccess",
+				domain: "another.com",
+				industry: "Healthcare",
+			} as never);
+
+		const result = await processCompanyArray(companies);
+
+		expect(researchCompany).toHaveBeenCalledTimes(3);
+		expect(result).toHaveLength(3);
+		expect(result[0]).toEqual({
+			name: "SuccessCompany",
+			domain: "success.com",
+			industry: "Tech",
+		});
+		expect(result[1]).toEqual({
+			name: "FailCompany",
+			domain: "fail.com",
+			_researchError: "API rate limit exceeded",
+		});
+		expect(result[2]).toEqual({
+			name: "AnotherSuccess",
+			domain: "another.com",
+			industry: "Healthcare",
+		});
+	});
 });
