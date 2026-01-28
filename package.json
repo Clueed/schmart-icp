@@ -5,10 +5,10 @@
 	"type": "module",
 	"scripts": {
 		"dev": "node --experimental-strip-types src/index.ts",
-		"format": "biome format .",
-		"format:fix": "biome format --write . ",
-		"lint": "biome lint .",
-		"lint:fix": "biome lint --write .",
+		"format": "biome format ./src",
+		"format:fix": "biome format --write ./src ",
+		"lint": "biome lint ./src",
+		"lint:fix": "biome lint --write ./src",
 		"typecheck": "tsc --noEmit --emitDeclarationOnly false",
 		"ci": "pnpm format:fix && pnpm lint:fix && pnpm typecheck && pnpm test",
 		"test": "vitest",
@@ -19,13 +19,17 @@
 	"license": "ISC",
 	"packageManager": "pnpm@10.11.0",
 	"devDependencies": {
-		"@biomejs/biome": "^2.2.2",
-		"@types/node": "^24.3.0",
-		"vitest": "^3.2.4"
+		"@biomejs/biome": "^2.3.12",
+		"@types/node": "^25.0.10",
+		"@types/yargs": "^17.0.35",
+		"@vitest/coverage-v8": "4.0.18",
+		"typescript": "^5.9.3",
+		"vitest": "^4.0.18"
 	},
 	"dependencies": {
-		"dotenv": "^17.2.1",
-		"openai": "^5.15.0",
-		"zod": "^4.1.3"
+		"dotenv": "^17.2.3",
+		"openai": "^6.16.0",
+		"yargs": "^18.0.0",
+		"zod": "^4.3.6"
 	}
 }

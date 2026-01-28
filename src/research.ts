@@ -1,8 +1,27 @@
 import { callLLM } from "./api.ts";
 import { Logger } from "./logger.ts";
 import { researchFieldConfiguration } from "./prompts.ts";
+import { generateResearchSummary } from "./research-summary.ts";
 import { createExtendedSchema, type ResearchFieldKey } from "./schemas.ts";
 import type { CompanyInput } from "./types.ts";
+
+function extractFieldValues(
+	results: Record<string, unknown>,
+): Record<string, unknown> {
+	const fieldKeys = Object.keys(
+		researchFieldConfiguration,
+	) as ResearchFieldKey[];
+	const flattened: Record<string, unknown> = {};
+
+	for (const fieldKey of fieldKeys) {
+		const fieldResult = results[fieldKey];
+		if (fieldResult && typeof fieldResult === "object") {
+			flattened[fieldKey] = (fieldResult as Record<string, unknown>)[fieldKey];
+		}
+	}
+
+	return flattened;
+}
 
 export async function researchCompany(companyName: string, domain?: string) {
 	Logger.log(`🔍 Starting research for ${companyName}`);
@@ -14,7 +33,11 @@ export async function researchCompany(companyName: string, domain?: string) {
 	};
 
 	const results = await researchAllFields(companyName);
-	const companyOutput = { ...companyInput, ...results };
+	const companyOutput = {
+		...companyInput,
+		...extractFieldValues(results),
+		"icp research summary": generateResearchSummary(results),
+	};
 
 	Logger.section("Research Results");
 	Logger.log(companyOutput);
