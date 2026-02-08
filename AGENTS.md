@@ -29,7 +29,7 @@ ALWAYS USE PNPM.
 - **Type Inference**: Extract types from Zod schemas when appropriate
 
 ## Dependencies & Patterns
-- **OpenAI API**: Use `openai` package, track token usage via globalTokenTracker
+- **OpenRouter SDK**: Use `@openrouter/sdk` package, track token usage via globalTokenTracker
 - **CLI**: yargs for argument parsing with examples and help text
 - **Config**: dotenv for environment variables (.env in .gitignore)
 - **File I/O**: Validate JSON files against Zod schemas before use
@@ -109,7 +109,7 @@ export type ExtractZodType<T> = T extends z.ZodType<infer U> ? U : never;
 ## Architecture & Module Responsibilities
 
 ### Core Modules
-- **api.ts**: OpenAI API integration, LLM calls with structured output
+- **api.ts**: OpenRouter API integration, LLM calls with web search and structured output
 - **research.ts**: Orchestrates company research across multiple fields
 - **schemas.ts**: Zod schemas for validation, type extraction helpers
 - **transform.ts**: Data normalization and transformation utilities
@@ -142,6 +142,7 @@ const { response, parsedOutput } = await callLLM({
 });
 
 // 4. Token usage is automatically tracked via globalTokenTracker
+// Note: OpenRouter auto-selects the best model with "openrouter/auto"
 ```
 
 ### CLI Pattern
@@ -158,9 +159,11 @@ const argv = await yargs(hideBin(process.argv))
 ## Important Notes
 
 ### Token Tracking
-- All OpenAI API calls should use `callLLM` from `api.ts`
+- All OpenRouter API calls should use `callLLM` from `api.ts`
 - Token usage is automatically tracked via `globalTokenTracker`
 - Call `globalTokenTracker.logSummary()` to display totals at the end
+- OpenRouter uses "openrouter/auto" for automatic model selection
+- Web search is integrated via the `web_search` tool
 
 ### Schema Validation
 - Always validate external JSON files before processing

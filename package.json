@@ -27,8 +27,8 @@
 		"vitest": "^4.0.18"
 	},
 	"dependencies": {
+		"@openrouter/sdk": "^0.8.0",
 		"dotenv": "^17.2.3",
-		"openai": "^6.16.0",
 		"yargs": "^18.0.0",
 		"zod": "^4.3.6"
 	}

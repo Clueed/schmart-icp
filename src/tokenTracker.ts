@@ -13,19 +13,26 @@ export interface ModelPricing {
 }
 
 /**
- * Supported OpenAI service tiers.
+ * Supported service tiers for OpenAI and OpenRouter.
  */
 export type ServiceTier = "batch" | "flex" | "standard" | "priority";
 
 /**
- * OpenAI model pricing across all service tiers.
+ * Model pricing across all service tiers.
  * Prices are per 1M tokens in USD.
- * Source: https://platform.openai.com/docs/pricing
+ * Sources:
+ * - OpenAI: https://platform.openai.com/docs/pricing
+ * - OpenRouter: https://openrouter.ai/docs#models
+ *
+ * Note: OpenRouter uses "openrouter/auto" for automatic model selection.
+ * Actual pricing depends on the model selected by OpenRouter.
+ * These prices are estimates for common models.
  */
 export const MODEL_PRICING: Record<
 	string,
 	Record<ServiceTier, ModelPricing>
 > = {
+	// OpenAI models
 	"gpt-5.2": {
 		batch: { inputPrice: 0.875, cachedPrice: 0.0875, outputPrice: 7.0 },
 		flex: { inputPrice: 0.875, cachedPrice: 0.0875, outputPrice: 7.0 },
@@ -225,6 +232,64 @@ export const MODEL_PRICING: Record<
 			inputPrice: 0.25,
 			cachedPrice: 0.125,
 			outputPrice: 1.0,
+		},
+	},
+
+	// OpenRouter models (approximate pricing - varies by selected model)
+	"openrouter/auto": {
+		standard: {
+			inputPrice: 0.5,
+			outputPrice: 1.5,
+		},
+		flex: {
+			inputPrice: 0.3,
+			outputPrice: 0.9,
+		},
+		batch: {
+			inputPrice: 0.25,
+			outputPrice: 0.75,
+		},
+		priority: {
+			inputPrice: 1.0,
+			outputPrice: 3.0,
+		},
+	},
+
+	// Common OpenRouter-hosted models
+	"anthropic/claude-3.5-sonnet": {
+		standard: {
+			inputPrice: 3.0,
+			outputPrice: 15.0,
+		},
+		flex: {
+			inputPrice: 3.0,
+			outputPrice: 15.0,
+		},
+		batch: {
+			inputPrice: 1.5,
+			outputPrice: 7.5,
+		},
+		priority: {
+			inputPrice: 6.0,
+			outputPrice: 30.0,
+		},
+	},
+	"google/gemini-pro-1.5": {
+		standard: {
+			inputPrice: 1.25,
+			outputPrice: 5.0,
+		},
+		flex: {
+			inputPrice: 1.25,
+			outputPrice: 5.0,
+		},
+		batch: {
+			inputPrice: 0.625,
+			outputPrice: 2.5,
+		},
+		priority: {
+			inputPrice: 2.5,
+			outputPrice: 10.0,
 		},
 	},
 };
