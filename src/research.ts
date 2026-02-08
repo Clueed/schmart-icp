@@ -47,7 +47,7 @@ export async function researchCompany(companyName: string, domain?: string) {
 
 export async function researchAllFields(company: string) {
   const fields = Object.entries(researchFieldConfiguration);
-  const batchSize = 1;
+  const batchSize = 3;
   const results: Record<string, unknown> = {};
 
   for (let i = 0; i < fields.length; i += batchSize) {

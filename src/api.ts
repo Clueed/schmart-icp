@@ -21,7 +21,7 @@ export interface CallLLMArgs<_TKey extends ResearchFieldKey> {
 export const callLLM = async <TKey extends ResearchFieldKey>(
   args: CallLLMArgs<TKey>,
 ) => {
-  const model = "kimi-k2.5";
+  const model = "kimi-k2-turbo-preview";
 
   globalTokenTracker.setModel(model);
   globalTokenTracker.setServiceTier("moonshot");
@@ -34,7 +34,7 @@ export const callLLM = async <TKey extends ResearchFieldKey>(
     { role: "system", content: SYSTEM_PROMPT },
     {
       role: "user",
-      content: `Please provide the following information in JSON format:\n\n${args.prompt}\n\nRespond with a JSON object matching this schema:\n${JSON.stringify(jsonSchema, null, 2)}`,
+      content: `${args.prompt}\n\nUse the submit_result tool to submit your answer.`,
     },
   ];
 
@@ -42,6 +42,14 @@ export const callLLM = async <TKey extends ResearchFieldKey>(
     model,
     messages,
     tools: [
+      {
+        type: "function",
+        function: {
+          name: "submit_result",
+          description: "Submit the research result",
+          parameters: jsonSchema,
+        },
+      },
       {
         type: "builtin_function",
         function: {
@@ -53,75 +61,6 @@ export const callLLM = async <TKey extends ResearchFieldKey>(
 
   Logger.debug("Raw LLM response:", response);
 
-  let responseContent = response.choices[0].message.content;
-
-  if (response.choices[0].finish_reason === "tool_calls") {
-    const toolCalls = response.choices[0].message.tool_calls;
-    if (toolCalls) {
-      const toolMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        ...messages,
-        response.choices[0].message,
-      ];
-
-      for (const toolCall of toolCalls) {
-        if (
-          toolCall.type === "function" &&
-          toolCall.function.name === "$web_search"
-        ) {
-          const toolArgs = JSON.parse(toolCall.function.arguments);
-          toolMessages.push({
-            role: "tool",
-            tool_call_id: toolCall.id,
-            name: toolCall.function.name,
-            content: JSON.stringify(toolArgs),
-          } as OpenAI.Chat.ChatCompletionToolMessageParam);
-        }
-      }
-
-      const finalResponse = await openai.chat.completions.create({
-        model,
-        messages: toolMessages,
-        tools: [
-          {
-            type: "builtin_function",
-            function: {
-              name: "$web_search",
-            },
-          },
-        ] as unknown as OpenAI.Chat.ChatCompletionTool[],
-      });
-
-      responseContent = finalResponse.choices[0].message.content;
-
-      if (response.usage) {
-        globalTokenTracker.addUsage({
-          input_tokens: response.usage.prompt_tokens,
-          cached_tokens: 0,
-          output_tokens: response.usage.completion_tokens,
-          reasoning_tokens: 0,
-          total_tokens: response.usage.total_tokens,
-        });
-      }
-      if (finalResponse.usage) {
-        globalTokenTracker.addUsage({
-          input_tokens: finalResponse.usage.prompt_tokens,
-          cached_tokens: 0,
-          output_tokens: finalResponse.usage.completion_tokens,
-          reasoning_tokens: 0,
-          total_tokens: finalResponse.usage.total_tokens,
-        });
-      }
-
-      const json = JSON.parse(responseContent || "{}");
-      const parsedOutput = parseResponse(
-        args.response_schema.name as TKey,
-        json,
-      );
-
-      return { response: finalResponse, parsedOutput };
-    }
-  }
-
   if (response.usage) {
     globalTokenTracker.addUsage({
       input_tokens: response.usage.prompt_tokens,
@@ -132,8 +71,96 @@ export const callLLM = async <TKey extends ResearchFieldKey>(
     });
   }
 
-  const json = JSON.parse(responseContent || "{}");
-  const parsedOutput = parseResponse(args.response_schema.name as TKey, json);
+  let currentResponse = response;
+  const currentMessages = [...messages];
 
-  return { response, parsedOutput };
+  const maxIterations = 10;
+  let iteration = 0;
+
+  while (
+    currentResponse.choices[0].finish_reason === "tool_calls" &&
+    iteration < maxIterations
+  ) {
+    iteration++;
+    const assistantMessage = currentResponse.choices[0].message;
+    currentMessages.push(assistantMessage);
+
+    const toolCalls = currentResponse.choices[0].message.tool_calls;
+    if (!toolCalls) break;
+
+    let foundSubmitResult = false;
+    let submitResultArgs: unknown = null;
+
+    for (const toolCall of toolCalls) {
+      if (toolCall.type === "function" && "function" in toolCall) {
+        if (toolCall.function.name === "submit_result") {
+          const toolArgs = JSON.parse(toolCall.function.arguments);
+          Logger.debug("submit_result tool arguments:", toolArgs);
+
+          foundSubmitResult = true;
+          submitResultArgs = toolArgs;
+
+          currentMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: JSON.stringify({ success: true }),
+          } as OpenAI.Chat.ChatCompletionToolMessageParam);
+        } else if (toolCall.function.name === "$web_search") {
+          const toolArgs = JSON.parse(toolCall.function.arguments);
+          Logger.debug("$web_search tool arguments:", toolArgs);
+
+          currentMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: JSON.stringify(toolArgs),
+          } as OpenAI.Chat.ChatCompletionToolMessageParam);
+        }
+      }
+    }
+
+    if (foundSubmitResult && submitResultArgs) {
+      const parsedOutput = parseResponse(
+        args.response_schema.name as TKey,
+        submitResultArgs,
+      );
+
+      return { response: currentResponse, parsedOutput };
+    }
+
+    currentResponse = await openai.chat.completions.create({
+      model,
+      messages: currentMessages,
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "submit_result",
+            description: "Submit the research result",
+            parameters: jsonSchema,
+          },
+        },
+        {
+          type: "builtin_function",
+          function: {
+            name: "$web_search",
+          },
+        },
+      ] as unknown as OpenAI.Chat.ChatCompletionTool[],
+    });
+
+    Logger.debug("Iteration", iteration, "response:", currentResponse);
+
+    if (currentResponse.usage) {
+      globalTokenTracker.addUsage({
+        input_tokens: currentResponse.usage.prompt_tokens,
+        cached_tokens: 0,
+        output_tokens: currentResponse.usage.completion_tokens,
+        reasoning_tokens: 0,
+        total_tokens: currentResponse.usage.total_tokens,
+      });
+    }
+  }
+
+  Logger.error("LLM did not call submit_result tool");
+  throw new Error("LLM did not call submit_result tool");
 };
