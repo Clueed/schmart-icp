@@ -72,6 +72,7 @@ export async function researchCompanyField<TKey extends ResearchFieldKey>(
 			name: field,
 			schema: schema,
 		},
+		useStructuredOutput: true,
 	});
 
 	Logger.debug(`LLM response for ${field}:`, response);

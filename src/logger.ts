@@ -3,7 +3,7 @@ export const Logger = (() => {
 
 	return {
 		debug: (...args: unknown[]) => {
-			if (debugEnabled) Logger.debug(...args);
+			if (debugEnabled) console.log(...args);
 		},
 		section: (...args: unknown[]) => {
 			console.log(`\n${"=".repeat(20)}`, ...args, `${"=".repeat(20)}\n`);
