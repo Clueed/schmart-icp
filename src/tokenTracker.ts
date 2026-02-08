@@ -15,7 +15,12 @@ export interface ModelPricing {
 /**
  * Supported OpenAI service tiers.
  */
-export type ServiceTier = "batch" | "flex" | "standard" | "priority";
+export type ServiceTier =
+	| "batch"
+	| "flex"
+	| "standard"
+	| "priority"
+	| "moonshot";
 
 /**
  * OpenAI model pricing across all service tiers.
@@ -24,7 +29,7 @@ export type ServiceTier = "batch" | "flex" | "standard" | "priority";
  */
 export const MODEL_PRICING: Record<
 	string,
-	Record<ServiceTier, ModelPricing>
+	Partial<Record<ServiceTier, ModelPricing>>
 > = {
 	"gpt-5.2": {
 		batch: { inputPrice: 0.875, cachedPrice: 0.0875, outputPrice: 7.0 },
@@ -225,6 +230,42 @@ export const MODEL_PRICING: Record<
 			inputPrice: 0.25,
 			cachedPrice: 0.125,
 			outputPrice: 1.0,
+		},
+	},
+	"kimi-k2-turbo-preview": {
+		moonshot: {
+			inputPrice: 1.15,
+			outputPrice: 8.0,
+		},
+	},
+	"kimi-k2": {
+		moonshot: {
+			inputPrice: 0.6,
+			outputPrice: 2.5,
+		},
+	},
+	"kimi-k2.5": {
+		moonshot: {
+			inputPrice: 0.6,
+			outputPrice: 3.0,
+		},
+	},
+	"moonshot-v1-8k": {
+		moonshot: {
+			inputPrice: 0.2,
+			outputPrice: 2.0,
+		},
+	},
+	"moonshot-v1-32k": {
+		moonshot: {
+			inputPrice: 0.2,
+			outputPrice: 2.0,
+		},
+	},
+	"moonshot-v1-128k": {
+		moonshot: {
+			inputPrice: 0.2,
+			outputPrice: 2.0,
 		},
 	},
 };

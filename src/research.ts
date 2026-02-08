@@ -6,75 +6,83 @@ import { createExtendedSchema, type ResearchFieldKey } from "./schemas.ts";
 import type { CompanyInput } from "./types.ts";
 
 function extractFieldValues(
-	results: Record<string, unknown>,
+  results: Record<string, unknown>,
 ): Record<string, unknown> {
-	const fieldKeys = Object.keys(
-		researchFieldConfiguration,
-	) as ResearchFieldKey[];
-	const flattened: Record<string, unknown> = {};
+  const fieldKeys = Object.keys(
+    researchFieldConfiguration,
+  ) as ResearchFieldKey[];
+  const flattened: Record<string, unknown> = {};
 
-	for (const fieldKey of fieldKeys) {
-		const fieldResult = results[fieldKey];
-		if (fieldResult && typeof fieldResult === "object") {
-			flattened[fieldKey] = (fieldResult as Record<string, unknown>)[fieldKey];
-		}
-	}
+  for (const fieldKey of fieldKeys) {
+    const fieldResult = results[fieldKey];
+    if (fieldResult && typeof fieldResult === "object") {
+      flattened[fieldKey] = (fieldResult as Record<string, unknown>)[fieldKey];
+    }
+  }
 
-	return flattened;
+  return flattened;
 }
 
 export async function researchCompany(companyName: string, domain?: string) {
-	Logger.log(`🔍 Starting research for ${companyName}`);
-	Logger.log(`Domain: ${domain}`);
+  Logger.log(`🔍 Starting research for ${companyName}`);
+  Logger.log(`Domain: ${domain}`);
 
-	const companyInput: CompanyInput = {
-		name: companyName,
-		domain: domain,
-	};
+  const companyInput: CompanyInput = {
+    name: companyName,
+    domain: domain,
+  };
 
-	const results = await researchAllFields(companyName);
-	const companyOutput = {
-		...companyInput,
-		...extractFieldValues(results),
-		"icp research summary": generateResearchSummary(results),
-	};
+  const results = await researchAllFields(companyName);
+  const companyOutput = {
+    ...companyInput,
+    ...extractFieldValues(results),
+    "icp research summary": generateResearchSummary(results),
+  };
 
-	Logger.section("Research Results");
-	Logger.log(companyOutput);
+  Logger.section("Research Results");
+  Logger.log(companyOutput);
 
-	return companyOutput;
+  return companyOutput;
 }
 
 export async function researchAllFields(company: string) {
-	const results = Object.fromEntries(
-		await Promise.all(
-			Object.entries(researchFieldConfiguration).map(async ([field]) => [
-				field,
-				await researchCompanyField(company, field as ResearchFieldKey),
-			]),
-		),
-	);
+  const fields = Object.entries(researchFieldConfiguration);
+  const batchSize = 1;
+  const results: Record<string, unknown> = {};
 
-	return results;
+  for (let i = 0; i < fields.length; i += batchSize) {
+    const batch = fields.slice(i, i + batchSize);
+    const batchResults = await Promise.all(
+      batch.map(async ([field]) => ({
+        field,
+        value: await researchCompanyField(company, field as ResearchFieldKey),
+      })),
+    );
+    for (const { field, value } of batchResults) {
+      results[field] = value;
+    }
+  }
+
+  return results;
 }
 
 export async function researchCompanyField<TKey extends ResearchFieldKey>(
-	company: string,
-	field: TKey,
+  company: string,
+  field: TKey,
 ) {
-	const prompt = researchFieldConfiguration[field].prompt(company);
+  const prompt = researchFieldConfiguration[field].prompt(company);
 
-	const schema = createExtendedSchema<TKey>(field);
+  const schema = createExtendedSchema<TKey>(field);
 
-	const { response, parsedOutput } = await callLLM({
-		prompt,
-		response_schema: {
-			name: field,
-			schema: schema,
-		},
-	});
+  const { response, parsedOutput } = await callLLM({
+    prompt,
+    response_schema: {
+      name: field,
+      schema: schema,
+    },
+  });
 
-	Logger.debug(`LLM response for ${field}:`, response);
+  Logger.debug(`LLM response for ${field}:`, response);
 
-	return parsedOutput;
+  return parsedOutput;
 }
