@@ -1,4 +1,5 @@
 import { callLLM } from "./api.ts";
+import type { AppConfig } from "./config.ts";
 import { Logger } from "./logger.ts";
 import { researchFieldConfiguration } from "./prompts.ts";
 import { generateResearchSummary } from "./research-summary.ts";
@@ -23,7 +24,11 @@ function extractFieldValues(
 	return flattened;
 }
 
-export async function researchCompany(companyName: string, domain?: string) {
+export async function researchCompany(
+	companyName: string,
+	domain?: string,
+	config?: AppConfig,
+) {
 	Logger.log(`🔍 Starting research for ${companyName}`);
 	Logger.log(`Domain: ${domain}`);
 
@@ -32,7 +37,7 @@ export async function researchCompany(companyName: string, domain?: string) {
 		domain: domain,
 	};
 
-	const results = await researchAllFields(companyName);
+	const results = await researchAllFields(companyName, config);
 	const companyOutput = {
 		...companyInput,
 		...extractFieldValues(results),
@@ -45,7 +50,7 @@ export async function researchCompany(companyName: string, domain?: string) {
 	return companyOutput;
 }
 
-export async function researchAllFields(company: string) {
+export async function researchAllFields(company: string, config?: AppConfig) {
 	const results = Object.fromEntries(
 		await Promise.all(
 			Object.entries(researchFieldConfiguration).map(async ([field]) => [
@@ -61,6 +66,7 @@ export async function researchAllFields(company: string) {
 export async function researchCompanyField<TKey extends ResearchFieldKey>(
 	company: string,
 	field: TKey,
+	config?: AppConfig,
 ) {
 	const prompt = researchFieldConfiguration[field].prompt(company);
 
@@ -73,6 +79,7 @@ export async function researchCompanyField<TKey extends ResearchFieldKey>(
 			schema: schema,
 		},
 		useStructuredOutput: true,
+		webSearchConfig: config?.webSearch,
 	});
 
 	Logger.debug(`LLM response for ${field}:`, response);

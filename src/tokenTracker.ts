@@ -312,6 +312,8 @@ export class TokenTracker {
 	private totalInputCost = 0;
 	private totalOutputCost = 0;
 	private totalCost = 0;
+	private totalWebSearchCost = 0;
+	private webSearchCallCount = 0;
 	private currentModel: string | null = null;
 	private currentTier: ServiceTier | null = null;
 
@@ -329,6 +331,19 @@ export class TokenTracker {
 	 */
 	setServiceTier(tier: ServiceTier) {
 		this.currentTier = tier;
+	}
+
+	/**
+	 * Adds web search cost to the tracker.
+	 * Web search costs $4 per 1000 results (default maxResults = 5 = $0.02 per call).
+	 * @param maxResults - Maximum number of search results requested
+	 */
+	addWebSearchCost(maxResults?: number) {
+		const results = maxResults ?? 5;
+		const cost = (results / 1000) * 4; // $4 per 1000 results
+		this.totalWebSearchCost += cost;
+		this.webSearchCallCount++;
+		this.totalCost += cost;
 	}
 
 	/**
@@ -412,6 +427,8 @@ export class TokenTracker {
 			total_tokens: this.totalTokens,
 			input_cost: this.totalInputCost,
 			output_cost: this.totalOutputCost,
+			web_search_cost: this.totalWebSearchCost,
+			web_search_calls: this.webSearchCallCount,
 			total_cost: this.totalCost,
 			model: this.currentModel,
 			service_tier: this.currentTier,
@@ -427,6 +444,11 @@ export class TokenTracker {
 		Logger.log(`Output tokens: ${summary.output_tokens}`);
 		Logger.log(`Reasoning tokens: ${summary.reasoning_tokens}`);
 		Logger.log(`Total tokens: ${summary.total_tokens}`);
+
+		if (summary.web_search_calls > 0) {
+			Logger.log(`Web search calls: ${summary.web_search_calls}`);
+			Logger.log(`Web search cost: $${summary.web_search_cost.toFixed(4)}`);
+		}
 
 		if (summary.model) {
 			Logger.log(`Model: ${summary.model}`);
@@ -452,6 +474,8 @@ export class TokenTracker {
 		this.totalInputCost = 0;
 		this.totalOutputCost = 0;
 		this.totalCost = 0;
+		this.totalWebSearchCost = 0;
+		this.webSearchCallCount = 0;
 		this.currentModel = null;
 		this.currentTier = null;
 	}

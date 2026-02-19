@@ -1,4 +1,4 @@
-import type { KeyMappingConfig } from "./config.ts";
+import type { AppConfig, KeyMappingConfig } from "./config.ts";
 import { Logger } from "./logger.ts";
 import { researchCompany } from "./research.ts";
 import { normalizeCompanyInput } from "./transform.ts";
@@ -10,7 +10,7 @@ import type { CompanyInputArray } from "./types.ts";
  * If an error occurs while researching a company, the error is saved to that company's result
  * and processing continues with the remaining companies.
  * @param companies - Array of company inputs to process
- * @param config - Key mapping configuration for normalizing inputs
+ * @param config - App configuration including key mapping and web search options
  * @param concurrency - Maximum number of companies to process simultaneously (default: 5).
  *                      Note: Each company makes 8 parallel API calls internally, so total
  *                      concurrent API calls = concurrency × 8.
@@ -18,7 +18,7 @@ import type { CompanyInputArray } from "./types.ts";
  */
 export async function processCompanyArray(
 	companies: CompanyInputArray,
-	config?: KeyMappingConfig,
+	config?: AppConfig,
 	concurrency = 2,
 ): Promise<Array<CompanyInputArray[number]>> {
 	if (concurrency < 1) {
@@ -50,6 +50,7 @@ export async function processCompanyArray(
 				const researchResult = await researchCompany(
 					normalized.name,
 					normalized.domain,
+					config,
 				);
 				return { index, result: { ...company, ...researchResult } };
 			} catch (error) {

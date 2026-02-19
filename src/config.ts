@@ -33,3 +33,63 @@ export function createKeyMappingConfig(
 		domainKey: partialConfig.domainKey ?? DEFAULT_KEY_MAPPING.domainKey,
 	};
 }
+
+/**
+ * Configuration for web search functionality.
+ */
+export interface WebSearchOptions {
+	/** Whether to enable web search for API calls */
+	enabled: boolean;
+	/** Maximum number of search results to return */
+	maxResults?: number;
+	/** Search engine to use (native, exa, or undefined for auto) */
+	engine?: "native" | "exa";
+}
+
+/**
+ * Default web search options.
+ */
+export const DEFAULT_WEB_SEARCH_OPTIONS: WebSearchOptions = {
+	enabled: false,
+	maxResults: 5,
+	engine: undefined,
+};
+
+/**
+ * Creates a WebSearchOptions with defaults for any unspecified keys.
+ * @param partialOptions - Partial web search options
+ * @returns Complete WebSearchOptions with defaults filled in
+ */
+export function createWebSearchOptions(
+	partialOptions: Partial<WebSearchOptions>,
+): WebSearchOptions {
+	return {
+		enabled: partialOptions.enabled ?? DEFAULT_WEB_SEARCH_OPTIONS.enabled,
+		maxResults:
+			partialOptions.maxResults ?? DEFAULT_WEB_SEARCH_OPTIONS.maxResults,
+		engine: partialOptions.engine ?? DEFAULT_WEB_SEARCH_OPTIONS.engine,
+	};
+}
+
+/**
+ * Extended app configuration that includes web search options.
+ */
+export interface AppConfig extends KeyMappingConfig {
+	webSearch?: WebSearchOptions;
+}
+
+/**
+ * Creates an AppConfig with web search options included.
+ * @param keyMappingConfig - Key mapping configuration
+ * @param webSearchOptions - Optional web search configuration
+ * @returns Complete AppConfig
+ */
+export function createAppConfig(
+	keyMappingConfig: KeyMappingConfig,
+	webSearchOptions?: WebSearchOptions,
+): AppConfig {
+	return {
+		...keyMappingConfig,
+		webSearch: webSearchOptions,
+	};
+}

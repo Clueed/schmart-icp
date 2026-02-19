@@ -1,6 +1,12 @@
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { createKeyMappingConfig, DEFAULT_KEY_MAPPING } from "./config.ts";
+import {
+	createAppConfig,
+	createKeyMappingConfig,
+	createWebSearchOptions,
+	DEFAULT_KEY_MAPPING,
+	DEFAULT_WEB_SEARCH_OPTIONS,
+} from "./config.ts";
 import { isJsonFile, readJsonFile, writeResults } from "./file-io.ts";
 import { Logger } from "./logger.ts";
 import { processCompanyArray } from "./processor.ts";
@@ -27,6 +33,24 @@ export async function main() {
 			describe: "Key name in JSON file for company domain",
 			default: DEFAULT_KEY_MAPPING.domainKey,
 		})
+		.option("web-search", {
+			type: "boolean",
+			describe: "Enable web search for LLM calls (adds $0.02 per call)",
+			default: DEFAULT_WEB_SEARCH_OPTIONS.enabled,
+		})
+		.option("web-max-results", {
+			type: "number",
+			describe:
+				"Maximum web search results to return (costs $4 per 1000 results)",
+			default: DEFAULT_WEB_SEARCH_OPTIONS.maxResults,
+		})
+		.option("web-engine", {
+			type: "string",
+			describe:
+				"Web search engine: native (provider built-in), exa, or auto (default)",
+			choices: ["native", "exa", "auto"],
+			default: "auto",
+		})
 		.help()
 		.alias("help", "h")
 		.version(false)
@@ -37,8 +61,18 @@ export async function main() {
 		domainKey: argv["domain-key"],
 	});
 
+	const webSearchOptions = createWebSearchOptions({
+		enabled: argv["web-search"],
+		maxResults: argv["web-max-results"],
+		engine:
+			argv["web-engine"] === "auto"
+				? undefined
+				: (argv["web-engine"] as "native" | "exa" | undefined),
+	});
+
 	Logger.debug("Arguments received:", argv);
 	Logger.debug("Key mapping config:", config);
+	Logger.debug("Web search options:", webSearchOptions);
 
 	const input = argv._.map(String).join(" ");
 
@@ -54,7 +88,8 @@ export async function main() {
 
 		try {
 			const companies = readJsonFile(input, config);
-			results = await processCompanyArray(companies, config);
+			const appConfig = createAppConfig(config, webSearchOptions);
+			results = await processCompanyArray(companies, appConfig, 2);
 		} catch (readOrProcessError) {
 			Logger.section("❌ Batch processing failed ❌");
 			Logger.error(readOrProcessError);
@@ -74,7 +109,8 @@ export async function main() {
 		Logger.section(`Research - ${input}`);
 
 		try {
-			await researchCompany(input);
+			const appConfig = createAppConfig(config, webSearchOptions);
+			await researchCompany(input, undefined, appConfig);
 			globalTokenTracker.logSummary();
 		} catch (error) {
 			Logger.section("❌ Research failed ❌");
