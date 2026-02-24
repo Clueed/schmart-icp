@@ -69,9 +69,8 @@ export function generateResearchSummary(
 	const summaryLines: string[] = [];
 
 	for (const field of knownFields) {
-		const displayName = field.key
-			.replace(/_/g, " ")
-			.replace(/\b\w/g, (l) => l.toUpperCase());
+		// Use lowercase field name with underscores replaced by spaces
+		const displayName = field.key.replace(/_/g, " ").toLowerCase();
 
 		// Format value based on type
 		const additionalInfo = (field as { _additionalKeys?: string[] })
@@ -89,11 +88,11 @@ export function generateResearchSummary(
 		// Add additional keys from object schemas
 		if (additionalInfo && additionalInfo.length > 0) {
 			for (const info of additionalInfo) {
-				summaryLines.push(`  ${info}`);
+				summaryLines.push(info);
 			}
 		}
 
-		summaryLines.push(`Certainty: ${field.certainty}`);
+		// Certainty included for reference but not displayed
 
 		if (field.sources && field.sources.length > 0) {
 			summaryLines.push("Sources:");
