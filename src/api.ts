@@ -20,7 +20,7 @@ export interface CallLLMArgs<_TKey extends ResearchFieldKey> {
 export const callLLM = async <TKey extends ResearchFieldKey>(
   args: CallLLMArgs<TKey>,
 ) => {
-  const model = "gpt-5.2";
+  const model = "gpt-5-nano";
   const serviceTier = "flex";
 
   globalTokenTracker.setModel(model);
