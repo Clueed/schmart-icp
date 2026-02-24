@@ -40,7 +40,6 @@ export const researchFieldConfiguration = {
       `What is the most recent figure of the employees of ${company}? Prefer Wikipedia as source if available.`,
     valueSchema: z.object({
       employees: z.number().int().min(0),
-      year: z.number().int().min(2000).max(2100).optional(),
     }),
   },
   revenue: {
@@ -48,7 +47,6 @@ export const researchFieldConfiguration = {
       `What is the most recent figure of the revenue of ${company}? Prefer Wikipedia as source if available.`,
     valueSchema: z.object({
       revenue: z.number().int().min(0),
-      year: z.number().int().min(2000).max(2100).optional(),
     }),
   },
   eam_tool: {
@@ -71,7 +69,6 @@ export const researchFieldConfiguration = {
         "other",
         "unknown",
       ]),
-      deployment: z.enum(["on-premise", "cloud", "hybrid", "unknown"]).optional(),
     }),
   },
   eam_practice: {
