@@ -1,6 +1,7 @@
 import { researchFieldConfiguration } from "./prompts.ts";
 import type { ResearchFieldKey } from "./schemas.ts";
 
+const baseResponseKeys = new Set(["explanation", "certainty_score", "sources"]);
 /**
  * Generates a human-readable summary of research results.
  * Only includes fields that are not "unknown" with their sources.
@@ -26,22 +27,41 @@ export function generateResearchSummary(
 			continue;
 		}
 
-		const fieldValue = (fieldResult as Record<string, unknown>)[fieldKey];
+		const resultObj = fieldResult as Record<string, unknown>;
+		const certainty = resultObj.certainty_score as number;
+		const sources = resultObj.sources as string[] | undefined;
+
+		// All schemas are objects: extract all non-base keys
+		const nonBaseKeys = Object.keys(resultObj).filter(
+			(k) => !baseResponseKeys.has(k),
+		);
+		if (nonBaseKeys.length === 0) {
+			continue;
+		}
+
+		// Use the key that matches the field name as primary value
+		const primaryKey = nonBaseKeys.find((k) => k === fieldKey) || nonBaseKeys[0];
+		const fieldValue = resultObj[primaryKey];
+
+		// Skip if primary value is "unknown"
 		if (fieldValue === "unknown") {
 			continue;
 		}
 
+		// Collect additional keys (excluding the primary key)
+		const additionalKeys = nonBaseKeys.filter((k) => k !== primaryKey);
+
 		knownFields.push({
 			key: fieldKey,
 			value: fieldValue,
-			certainty: (fieldResult as Record<string, unknown>)
-				.certainty_score as number,
-			sources: (fieldResult as Record<string, unknown>).sources as
-				| string[]
-				| undefined,
-		});
+			certainty,
+			sources,
+			// Store additional keys for multi-line display
+			_additionalKeys: additionalKeys.map(
+				(k) => `${k}: ${JSON.stringify(resultObj[k])}`,
+			),
+		} as { key: string; value: unknown; certainty: number; sources?: string[]; _additionalKeys?: string[] });
 	}
-
 	if (knownFields.length === 0) {
 		return "No known research results available.";
 	}
@@ -53,18 +73,26 @@ export function generateResearchSummary(
 			.replace(/_/g, " ")
 			.replace(/\b\w/g, (l) => l.toUpperCase());
 
+		// Format value based on type
+		const additionalInfo = (field as { _additionalKeys?: string[] })
+			._additionalKeys;
+
 		let formattedValue: string;
 		if (typeof field.value === "number") {
-			if (field.key === "revenue") {
-				formattedValue = `€${field.value.toLocaleString()}`;
-			} else {
-				formattedValue = field.value.toLocaleString();
-			}
+			formattedValue = field.value.toLocaleString();
 		} else {
 			formattedValue = String(field.value);
 		}
 
 		summaryLines.push(`${displayName}: ${formattedValue}`);
+
+		// Add additional keys from object schemas
+		if (additionalInfo && additionalInfo.length > 0) {
+			for (const info of additionalInfo) {
+				summaryLines.push(`  ${info}`);
+			}
+		}
+
 		summaryLines.push(`Certainty: ${field.certainty}`);
 
 		if (field.sources && field.sources.length > 0) {

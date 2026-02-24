@@ -38,77 +38,96 @@ export const researchFieldConfiguration = {
   employees: {
     prompt: (company) =>
       `What is the most recent figure of the employees of ${company}? Prefer Wikipedia as source if available.`,
-    valueSchema: z.number().int().min(0),
+    valueSchema: z.object({
+      employees: z.number().int().min(0),
+      year: z.number().int().min(2000).max(2100).optional(),
+    }),
   },
   revenue: {
     prompt: (company) =>
       `What is the most recent figure of the revenue of ${company}? Prefer Wikipedia as source if available.`,
-    valueSchema: z.number().int().min(0),
+    valueSchema: z.object({
+      revenue: z.number().int().min(0),
+      year: z.number().int().min(2000).max(2100).optional(),
+    }),
   },
   eam_tool: {
     prompt: (company) =>
-      `Which, if any, Enterprise Architecture Management (EAM) tool does the company ${company}.`,
-    valueSchema: z.enum([
-      "LeanIX",
-      "Ardoq",
-      "Alfabet",
-      "ADOIT",
-      "ArchiMate",
-      "LUY",
-      "Bee360",
-      "ServiceNow Enterprise Architecture",
-      "GBTEC BIC",
-      "Bizzdesign",
-      "MEGA HOPEX",
-      "Planview",
-      "other",
-      "unknown",
-    ]),
+      `Which, if any, Enterprise Architecture Management (EAM) tool does the company ${company} use? Return the tool name and deployment type.`,
+    valueSchema: z.object({
+      eam_tool: z.enum([
+        "LeanIX",
+        "Ardoq",
+        "Alfabet",
+        "ADOIT",
+        "ArchiMate",
+        "LUY",
+        "Bee360",
+        "ServiceNow Enterprise Architecture",
+        "GBTEC BIC",
+        "Bizzdesign",
+        "MEGA HOPEX",
+        "Planview",
+        "other",
+        "unknown",
+      ]),
+      deployment: z.enum(["on-premise", "cloud", "hybrid", "unknown"]).optional(),
+    }),
   },
   eam_practice: {
     prompt: (company) =>
       `Does ${company} have an enterprise architecture (EA) department? Often also called Business Architecture, IT-Enterprise-Architecture, Group EA, Unternehmensarchitektur.`,
-    valueSchema: z.enum(["established", "unknown"]),
+    valueSchema: z.object({
+      eam_practice: z.enum(["established", "unknown"]),
+    }),
   },
   itBp_practice: {
     prompt: (company) =>
       `Does ${company} have the role of IT Business Partner or IT Demand Manager? Something they are also referred to as IT Business Relation(s)/Relationship(s) Manager, IT Coordinator, Requirements Engineer, or IT Business Analyst.`,
-    valueSchema: z.enum(["established", "unknown"]),
+    valueSchema: z.object({
+      itBp_practice: z.enum(["established", "unknown"]),
+    }),
   },
   itsm_tool: {
     prompt: (company) =>
-      `Which, if any, IT Service Management (ITSM) tool does the company ${company}.`,
-    valueSchema: z.enum([
-      "Jira Service Management",
-      "ServiceNow ITSM",
-      "Ivanti",
-      "Matrix42",
-      "Freshworks Freshservice",
-      "USU ITSM",
-      "BMC Helix ITSM",
-      "Omnitracker",
-      "other",
-      "unknown",
-    ]),
+      `Which, if any, IT Service Management (ITSM) tool does the company ${company} use?`,
+    valueSchema: z.object({
+      itsm_tool: z.enum([
+        "Jira Service Management",
+        "ServiceNow ITSM",
+        "Ivanti",
+        "Matrix42",
+        "Freshworks Freshservice",
+        "USU ITSM",
+        "BMC Helix ITSM",
+        "Omnitracker",
+        "other",
+        "unknown",
+      ]),
+    }),
   },
   sam_practice: {
     prompt: (company) =>
       `Does ${company} have a Software Asset Management (SAM), IT License Management, or IT Asset Management department?.`,
-    valueSchema: z.enum(["established", "unknown"]),
+    valueSchema: z.object({
+      sam_practice: z.enum(["established", "unknown"]),
+    }),
   },
   sam_tool: {
     prompt: (company) =>
       `Which, if any, Software Asset Management (SAM)/IT License Management Tools tool does the company ${company} use?`,
-    valueSchema: z.enum([
-      "Flexera",
-      "ServiceNow Software Asset Management (SAM)",
-      "ManageEngine AssetExplorer",
-      "Atera",
-      "Ivanti",
-      "USU Software Asset Management",
-      "Zluri",
-      "other",
-      "unknown",
-    ]),
+    valueSchema: z.object({
+      sam_tool: z.enum([
+        "Flexera",
+        "ServiceNow Software Asset Management (SAM)",
+        "ManageEngine AssetExplorer",
+        "Atera",
+        "Ivanti",
+        "USU Software Asset Management",
+        "Zluri",
+        "other",
+        "unknown",
+      ]),
+    }),
   },
 } as const satisfies Record<string, DataField>;

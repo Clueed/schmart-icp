@@ -15,29 +15,24 @@ export type ResearchFieldKey = keyof ResearchFieldConfig;
 // Extract the Zod type from a valueSchema
 export type ExtractZodType<T> = T extends z.ZodType<infer U> ? U : never;
 
-// Create extended schema type for a specific field
-export type ExtendedResponseSchema<K extends ResearchFieldKey> = z.ZodObject<
-	z.infer<typeof baseResponseSchema> & {
-		[P in K]: ResearchFieldConfig[P]["valueSchema"];
-	}
->;
+// Extract shape from ZodObject (all valueSchema are now objects)
+type ExtractObjectShape<T> = T extends z.ZodObject<infer S> ? S : never;
 
 // Create extended response type for a specific field
-export type ExtendedResponse<K extends ResearchFieldKey> = z.infer<
-	typeof baseResponseSchema
-> & {
-	[P in K]: ExtractZodType<ResearchFieldConfig[K]["valueSchema"]>;
-};
-
+// All valueSchema are objects, so we flatten their keys into baseResponseSchema
+export type ExtendedResponse<K extends ResearchFieldKey> = z.infer<typeof baseResponseSchema> &
+	ExtractObjectShape<ResearchFieldConfig[K]["valueSchema"]>;
 // Runtime helper function to create extended schema
+// All valueSchema are ZodObjects, so we always flatten their shape
 export function createExtendedSchema<K extends ResearchFieldKey>(
 	fieldKey: K,
-): ExtendedResponseSchema<K> {
+): z.ZodType<any> {
 	const fieldConfig = researchFieldConfiguration[fieldKey];
 
-	return baseResponseSchema.extend({
-		[fieldKey]: fieldConfig.valueSchema,
-	}) as ExtendedResponseSchema<K>;
+	// Flatten: merge object shape into baseResponseSchema
+	return baseResponseSchema.extend(
+		(fieldConfig.valueSchema as z.ZodObject<any>).shape,
+	);
 }
 
 export function parseResponse<K extends ResearchFieldKey>(

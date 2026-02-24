@@ -5,18 +5,21 @@ import { generateResearchSummary } from "./research-summary.ts";
 import { createExtendedSchema, type ResearchFieldKey } from "./schemas.ts";
 import type { CompanyInput } from "./types.ts";
 
+const baseResponseKeys = new Set(["explanation", "certainty_score", "sources"]);
+
 function extractFieldValues(
 	results: Record<string, unknown>,
 ): Record<string, unknown> {
-	const fieldKeys = Object.keys(
-		researchFieldConfiguration,
-	) as ResearchFieldKey[];
 	const flattened: Record<string, unknown> = {};
 
-	for (const fieldKey of fieldKeys) {
-		const fieldResult = results[fieldKey];
+	for (const [_fieldKey, fieldResult] of Object.entries(results)) {
 		if (fieldResult && typeof fieldResult === "object") {
-			flattened[fieldKey] = (fieldResult as Record<string, unknown>)[fieldKey];
+			// Spread all keys from field result, excluding baseResponseSchema keys
+			for (const [key, value] of Object.entries(fieldResult as Record<string, unknown>)) {
+				if (!baseResponseKeys.has(key)) {
+					flattened[key] = value;
+				}
+			}
 		}
 	}
 
