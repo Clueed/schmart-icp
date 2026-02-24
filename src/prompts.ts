@@ -37,12 +37,12 @@ When a field cannot be determined for *any* part of the corporate group, return 
 export const researchFieldConfiguration = {
   employees: {
     prompt: (company) =>
-      `What is the most recent figure of the employees of ${company}?`,
+      `What is the most recent figure of the employees of ${company}? Prefer Wikipedia as source if available.`,
     valueSchema: z.number().int().min(0),
   },
   revenue: {
     prompt: (company) =>
-      `What is the most recent figure of the revenue of ${company}?`,
+      `What is the most recent figure of the revenue of ${company}? Prefer Wikipedia as source if available.`,
     valueSchema: z.number().int().min(0),
   },
   eam_tool: {
@@ -67,7 +67,7 @@ export const researchFieldConfiguration = {
   },
   eam_practice: {
     prompt: (company) =>
-      `Does ${company} have an enterprise architecture (EA) department? Often also called Business Architecture, something IT-Enterprise-Architecture, Group EA, Unternehmensarchitektur.`,
+      `Does ${company} have an enterprise architecture (EA) department? Often also called Business Architecture, IT-Enterprise-Architecture, Group EA, Unternehmensarchitektur.`,
     valueSchema: z.enum(["established", "unknown"]),
   },
   itBp_practice: {
