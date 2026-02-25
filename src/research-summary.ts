@@ -13,12 +13,7 @@ export function generateResearchSummary(
 	const fieldKeys = Object.keys(
 		researchFieldConfiguration,
 	) as ResearchFieldKey[];
-	const knownFields: Array<{
-		key: string;
-		value: unknown;
-		certainty: number;
-		sources?: string[];
-	}> = [];
+	const summaryLines: string[] = [];
 
 	for (const fieldKey of fieldKeys) {
 		const fieldResult = results[fieldKey];
@@ -26,55 +21,60 @@ export function generateResearchSummary(
 			continue;
 		}
 
-		const fieldValue = (fieldResult as Record<string, unknown>)[fieldKey];
-		if (fieldValue === "unknown") {
-			continue;
-		}
+		const nestedObj = fieldResult as Record<string, unknown>;
+		const nestedKeys = Object.keys(nestedObj);
 
-		knownFields.push({
-			key: fieldKey,
-			value: fieldValue,
-			certainty: (fieldResult as Record<string, unknown>)
-				.certainty_score as number,
-			sources: (fieldResult as Record<string, unknown>).sources as
-				| string[]
-				| undefined,
-		});
-	}
+		// Collect non-unknown values for this field
+		const fieldLines: string[] = [];
 
-	if (knownFields.length === 0) {
-		return "No known research results available.";
-	}
+		for (const nestedKey of nestedKeys) {
+			if (
+				nestedKey === "certainty_score" ||
+				nestedKey === "sources" ||
+				nestedKey === "explanation"
+			) {
+				continue;
+			}
 
-	const summaryLines: string[] = [];
+			const nestedValue = nestedObj[nestedKey];
+			if (nestedValue === "unknown") {
+				continue;
+			}
 
-	for (const field of knownFields) {
-		const displayName = field.key
-			.replace(/_/g, " ")
-			.replace(/\b\w/g, (l) => l.toUpperCase());
+			const displayName = nestedKey
+				.replace(/_/g, " ")
+				.replace(/\b\w/g, (l) => l.toUpperCase());
 
-		let formattedValue: string;
-		if (typeof field.value === "number") {
-			if (field.key === "revenue") {
-				formattedValue = `€${field.value.toLocaleString()}`;
+			let formattedValue: string;
+			if (typeof nestedValue === "number") {
+				formattedValue = nestedValue.toLocaleString();
+			} else if (typeof nestedValue === "string") {
+				formattedValue = nestedValue;
 			} else {
-				formattedValue = field.value.toLocaleString();
+				continue;
 			}
-		} else {
-			formattedValue = String(field.value);
+
+			fieldLines.push(`${displayName}: ${formattedValue}`);
 		}
 
-		summaryLines.push(`${displayName}: ${formattedValue}`);
-		summaryLines.push(`Certainty: ${field.certainty}`);
+		// Add collected values and sources (if any values exist)
+		if (fieldLines.length > 0) {
+			summaryLines.push(...fieldLines);
 
-		if (field.sources && field.sources.length > 0) {
-			summaryLines.push("Sources:");
-			for (const source of field.sources) {
-				summaryLines.push(`  - ${source}`);
+			const sources = nestedObj.sources as string[] | undefined;
+			if (sources && sources.length > 0) {
+				summaryLines.push("Sources:");
+				for (const source of sources) {
+					summaryLines.push(`  - ${source}`);
+				}
 			}
-		}
 
-		summaryLines.push("");
+			summaryLines.push("");
+		}
+	}
+
+	if (summaryLines.length === 0) {
+		return "No known research results available.";
 	}
 
 	return summaryLines.join("\n").trimEnd();

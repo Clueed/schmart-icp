@@ -8,19 +8,7 @@ import type { CompanyInput } from "./types.ts";
 function extractFieldValues(
 	results: Record<string, unknown>,
 ): Record<string, unknown> {
-	const fieldKeys = Object.keys(
-		researchFieldConfiguration,
-	) as ResearchFieldKey[];
-	const flattened: Record<string, unknown> = {};
-
-	for (const fieldKey of fieldKeys) {
-		const fieldResult = results[fieldKey];
-		if (fieldResult && typeof fieldResult === "object") {
-			flattened[fieldKey] = (fieldResult as Record<string, unknown>)[fieldKey];
-		}
-	}
-
-	return flattened;
+	return results;
 }
 
 export async function researchCompany(companyName: string, domain?: string) {

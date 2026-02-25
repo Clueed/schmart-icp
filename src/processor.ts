@@ -17,62 +17,62 @@ import type { CompanyInputArray } from "./types.ts";
  * @returns Array of company results with research data merged (or error info if failed)
  */
 export async function processCompanyArray(
-  companies: CompanyInputArray,
-  config?: KeyMappingConfig,
-  concurrency = 2,
+	companies: CompanyInputArray,
+	config?: KeyMappingConfig,
+	concurrency = 2,
 ): Promise<Array<CompanyInputArray[number]>> {
-  if (concurrency < 1) {
-    throw new Error("concurrency must be at least 1");
-  }
+	if (concurrency < 1) {
+		throw new Error("concurrency must be at least 1");
+	}
 
-  function chunk<T>(array: T[], size: number): T[][] {
-    const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size));
-    }
-    return chunks;
-  }
+	function chunk<T>(array: T[], size: number): T[][] {
+		const chunks: T[][] = [];
+		for (let i = 0; i < array.length; i += size) {
+			chunks.push(array.slice(i, i + size));
+		}
+		return chunks;
+	}
 
-  const chunks = chunk(companies, concurrency);
-  const allResults: Array<{
-    index: number;
-    result: CompanyInputArray[number];
-  }> = [];
+	const chunks = chunk(companies, concurrency);
+	const allResults: Array<{
+		index: number;
+		result: CompanyInputArray[number];
+	}> = [];
 
-  for (const chunk of chunks) {
-    const chunkPromises = chunk.map(async (company, chunkIndex) => {
-      const index = allResults.length + chunkIndex;
-      const normalized = config
-        ? normalizeCompanyInput(company, config)
-        : company;
+	for (const chunk of chunks) {
+		const chunkPromises = chunk.map(async (company, chunkIndex) => {
+			const index = allResults.length + chunkIndex;
+			const normalized = config
+				? normalizeCompanyInput(company, config)
+				: company;
 
-      try {
-        const researchResult = await researchCompany(
-          normalized.name,
-          normalized.domain,
-        );
-        return { index, result: { ...company, ...researchResult } };
-      } catch (error) {
-        Logger.warn(`⚠️  Failed to research company: ${normalized.name}`);
-        Logger.warn(error);
-        return {
-          index,
-          result: {
-            ...company,
-            _researchError:
-              error instanceof Error ? error.message : String(error),
-          },
-        };
-      }
-    });
+			try {
+				const researchResult = await researchCompany(
+					normalized.name,
+					normalized.domain,
+				);
+				return { index, result: { ...company, ...researchResult } };
+			} catch (error) {
+				Logger.warn(`⚠️  Failed to research company: ${normalized.name}`);
+				Logger.warn(error);
+				return {
+					index,
+					result: {
+						...company,
+						_researchError:
+							error instanceof Error ? error.message : String(error),
+					},
+				};
+			}
+		});
 
-    const chunkResults = await Promise.all(chunkPromises);
-    allResults.push(...chunkResults);
-  }
+		const chunkResults = await Promise.all(chunkPromises);
+		allResults.push(...chunkResults);
+	}
 
-  const results = allResults
-    .sort((a, b) => a.index - b.index)
-    .map((item) => item.result);
+	const results = allResults
+		.sort((a, b) => a.index - b.index)
+		.map((item) => item.result);
 
-  return results;
+	return results;
 }

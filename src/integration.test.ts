@@ -366,4 +366,80 @@ describe("Integration - JSON file batch processing", () => {
 		);
 		expect(globalTokenTracker.logSummary).toHaveBeenCalled();
 	});
+
+	it("should generate research summary for single company", async () => {
+		process.argv = ["node", "index.ts", "Hermes Arzneimittel Holding GmbH"];
+		vi.mocked(fs.existsSync).mockReturnValue(false);
+
+		const { researchCompany } = await import("./research.ts");
+		const { generateResearchSummary } = await import("./research-summary.js");
+
+		// Raw research results (without pre-generated summary)
+		const rawResults = {
+			employees: {
+				explanation: "The most recent figures...",
+				certainty_score: 0.3,
+				sources: ["https://de.wikipedia.org/wiki/Hermes_Arzneimittel_Holding"],
+				employees: 1082,
+				revenue: 385600000,
+			},
+			eam_research: {
+				explanation: "Yes, Hermes uses LeanIX...",
+				certainty_score: 0.41,
+				sources: ["https://www.hermesworld.com/..."],
+				eam_practice: "established",
+				eam_tool: "LeanIX",
+			},
+			sam_research: {
+				explanation: "No evidence found...",
+				certainty_score: 0.31,
+				sources: [],
+				sam_practice: "unknown",
+				sam_tool: "unknown",
+			},
+			itsm_tool: {
+				explanation: "No concrete evidence...",
+				certainty_score: 0.19,
+				sources: [],
+				itsm_tool: "unknown",
+			},
+			itBp_practice: {
+				explanation: "Not found...",
+				certainty_score: 0.22,
+				sources: [],
+				itBp_practice: "unknown",
+			},
+		};
+
+		const expectedSummary = generateResearchSummary(rawResults);
+
+		// Mock researchCompany to add the summary as the real implementation would
+		vi.mocked(researchCompany).mockResolvedValue({
+			name: "Hermes Arzneimittel Holding GmbH",
+			domain: undefined,
+			...rawResults,
+			"icp research summary": expectedSummary,
+		});
+
+		const { globalTokenTracker } = await import("./tokenTracker.ts");
+		vi.mocked(globalTokenTracker.logSummary).mockImplementation(() => {});
+
+		await main();
+
+		expect(researchCompany).toHaveBeenCalledWith("Hermes Arzneimittel Holding GmbH");
+		expect(globalTokenTracker.logSummary).toHaveBeenCalled();
+		expect(fs.writeFileSync).not.toHaveBeenCalled();
+
+		// Verify the summary was generated correctly with merged sources
+		expect(expectedSummary).toContain("Employees: 1,082");
+		expect(expectedSummary).toContain("Revenue: 385,600,000");
+		expect(expectedSummary).toContain("Eam Practice: established");
+		expect(expectedSummary).toContain("Eam Tool: LeanIX");
+		expect(expectedSummary).not.toContain("unknown");
+
+		// Verify sources are merged (not duplicated for employees/revenue)
+		const sourceLines = expectedSummary.split("\n").filter((line) => line.includes("https://de.wikipedia.org"));
+		expect(sourceLines.length).toBe(1); // Source should appear only once for both employees and revenue
+	});
+
 });
