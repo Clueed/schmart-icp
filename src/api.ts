@@ -68,5 +68,14 @@ export const callLLM = async <TKey extends ResearchFieldKey>(
     });
   }
 
+  // Track web search usage
+  const webSearchCalls = response.output.filter(
+    (item): item is { type: "web_search_call"; id: string; status: "in_progress" | "completed" | "searching" | "failed" } =>
+      item.type === "web_search_call",
+  ).length;
+
+  if (webSearchCalls > 0) {
+    globalTokenTracker.addWebSearchUsage(webSearchCalls);
+  }
   return { response, parsedOutput };
 };
