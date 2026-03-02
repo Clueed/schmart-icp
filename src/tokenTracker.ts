@@ -229,11 +229,6 @@ export const MODEL_PRICING: Record<
 	},
 };
 
-/**
- * Web search pricing per 1,000 API calls in USD.
- * Source: https://platform.openai.com/docs/pricing
- */
-export const WEB_SEARCH_PRICE_PER_1K_CALLS = 10.0;
 export interface TokenUsage {
 	input_tokens: number;
 	cached_tokens: number;
@@ -254,9 +249,6 @@ export class TokenTracker {
 	private totalCost = 0;
 	private currentModel: string | null = null;
 	private currentTier: ServiceTier | null = null;
-
-	private totalWebSearchCalls = 0;
-	private totalWebSearchCost = 0;
 
 	/**
 	 * Sets the model name for cost calculation.
@@ -327,19 +319,6 @@ export class TokenTracker {
 		}
 	}
 
-	/**
-	 * Tracks web search tool usage.
-	 * @param searchCalls - Number of web search calls made
-	 */
-	addWebSearchUsage(searchCalls: number) {
-		this.totalWebSearchCalls += searchCalls;
-		this.totalWebSearchCost =
-			(this.totalWebSearchCalls * WEB_SEARCH_PRICE_PER_1K_CALLS) /
-			1000;
-		this.totalCost =
-			this.totalInputCost + this.totalOutputCost + this.totalWebSearchCost;
-	}
-
 	addUsage(usage: TokenUsage) {
 		this.totalInput += usage.input_tokens;
 		this.totalCached += usage.cached_tokens;
@@ -355,8 +334,7 @@ export class TokenTracker {
 			usage.reasoning_tokens,
 			"reasoning",
 		);
-		this.totalCost =
-			this.totalInputCost + this.totalOutputCost + this.totalWebSearchCost;
+		this.totalCost = this.totalInputCost + this.totalOutputCost;
 	}
 
 	getSummary() {
@@ -367,8 +345,6 @@ export class TokenTracker {
 			output_tokens: this.totalOutput,
 			reasoning_tokens: this.totalReasoning,
 			total_tokens: this.totalTokens,
-			web_search_calls: this.totalWebSearchCalls,
-			web_search_cost: this.totalWebSearchCost,
 			input_cost: this.totalInputCost,
 			output_cost: this.totalOutputCost,
 			total_cost: this.totalCost,
@@ -394,11 +370,6 @@ export class TokenTracker {
 			Logger.log(`Service tier: ${summary.service_tier}`);
 		}
 
-		if (summary.web_search_calls > 0) {
-			Logger.log(`Web search calls: ${summary.web_search_calls}`);
-			Logger.log(`Web search cost: $${summary.web_search_cost.toFixed(4)}`);
-		}
-
 		if (summary.total_cost > 0) {
 			Logger.log(`Input cost: $${summary.input_cost.toFixed(4)}`);
 			Logger.log(`Output cost: $${summary.output_cost.toFixed(4)}`);
@@ -415,8 +386,6 @@ export class TokenTracker {
 		this.callCount = 0;
 		this.totalInputCost = 0;
 		this.totalOutputCost = 0;
-		this.totalWebSearchCalls = 0;
-		this.totalWebSearchCost = 0;
 		this.totalCost = 0;
 		this.currentModel = null;
 		this.currentTier = null;
