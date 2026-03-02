@@ -80,7 +80,55 @@ export async function main() {
 			Logger.log(
 				`Processing ${toProcess.length} of ${companies.length} companies...`,
 			);
-			const newResults = await processCompanyArray(toProcess, config);
+
+			// Track partial results for graceful shutdown
+			let partialNewResults: Array<Record<string, unknown>> = [];
+			let shutdownHandlerRegistered = false;
+			let handleShutdown: (() => void) | null = null;
+
+			// Setup graceful shutdown handler
+			const setupShutdownHandler = () => {
+				if (shutdownHandlerRegistered) return;
+				shutdownHandlerRegistered = true;
+
+				handleShutdown = () => {
+					// Merge existing results with partial new results
+					const allResults = [...existingResults, ...partialNewResults];
+					writeResults(input, allResults);
+					Logger.warn("\n⚠️  Process interrupted - partial results saved");
+					globalTokenTracker.logSummary();
+					process.exit(0);
+				};
+
+				process.on("SIGINT", handleShutdown);
+				process.on("SIGTERM", handleShutdown);
+			};
+
+			// Clean up shutdown handlers after successful completion
+			const cleanupShutdownHandler = () => {
+				if (!shutdownHandlerRegistered || !handleShutdown) return;
+				process.off("SIGINT", handleShutdown);
+				process.off("SIGTERM", handleShutdown);
+				shutdownHandlerRegistered = false;
+				handleShutdown = null;
+			};
+
+			// Setup shutdown handler before starting processing
+			setupShutdownHandler();
+
+			// Process with progress callback to track partial results
+			const newResults = await processCompanyArray(
+				toProcess,
+				config,
+				2,
+				(partial) => {
+					// Update partial results as each chunk completes
+					partialNewResults = partial as Array<Record<string, unknown>>;
+				},
+			);
+
+			// Clean up shutdown handlers since processing completed successfully
+			cleanupShutdownHandler();
 
 			// Merge and write all results
 			const allResults = [...existingResults, ...newResults];
@@ -104,4 +152,3 @@ export async function main() {
 			process.exit(1);
 		}
 	}
-}

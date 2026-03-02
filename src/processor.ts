@@ -21,6 +21,7 @@ export async function processCompanyArray(
 	companies: CompanyInputArray,
 	config?: KeyMappingConfig,
 	concurrency = 2,
+	onProgress?: (partialResults: Array<CompanyInputArray[number]>) => void,
 ): Promise<Array<CompanyInputArray[number]>> {
 	if (concurrency < 1) {
 		throw new Error("concurrency must be at least 1");
@@ -75,6 +76,14 @@ export async function processCompanyArray(
 
 		const chunkResults = await Promise.all(chunkPromises);
 		allResults.push(...chunkResults);
+
+		// Call onProgress callback after each chunk completes
+		if (onProgress) {
+			const partialResults = allResults
+				.sort((a, b) => a.index - b.index)
+				.map((item) => item.result);
+			onProgress(partialResults);
+		}
 	}
 
 	const results = allResults

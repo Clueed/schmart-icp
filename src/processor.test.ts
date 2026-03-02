@@ -296,7 +296,7 @@ describe("processCompanyArray function", () => {
 		expect(result).toHaveLength(3);
 		expect(result[0].name).toBe("First");
 		expect(result[1].name).toBe("Second");
-		expect(result[2]).name).toBe("Third");
+		expect(result[2].name).toBe("Third");
 	});
 
 	it("should handle array smaller than concurrency", async () => {
