@@ -240,6 +240,64 @@ describe("TokenTracker", () => {
 		});
 	});
 
+	describe("web search cost tracking", () => {
+		beforeEach(() => {
+			tracker.setModel("gpt-5-mini");
+			tracker.setServiceTier("flex");
+		});
+
+		it("should calculate cost for web search calls", () => {
+			tracker.addWebSearchUsage(1000);
+			const summary = tracker.getSummary();
+			expect(summary.web_search_calls).toBe(1000);
+			expect(summary.web_search_cost).toBeCloseTo(10.0, 4);
+		});
+
+		it("should calculate cost for partial web search calls", () => {
+			tracker.addWebSearchUsage(500);
+			const summary = tracker.getSummary();
+			expect(summary.web_search_calls).toBe(500);
+			expect(summary.web_search_cost).toBeCloseTo(5.0, 4);
+		});
+
+		it("should aggregate multiple web search calls", () => {
+			tracker.addWebSearchUsage(300);
+			tracker.addWebSearchUsage(700);
+			const summary = tracker.getSummary();
+			expect(summary.web_search_calls).toBe(1000);
+			expect(summary.web_search_cost).toBeCloseTo(10.0, 4);
+		});
+
+		it("should include web search cost in total cost", () => {
+			tracker.addWebSearchUsage(100); // $1.00
+			const usage: TokenUsage = {
+				input_tokens: 1_000_000, // $0.125
+				cached_tokens: 0,
+				output_tokens: 0,
+				reasoning_tokens: 0,
+				total_tokens: 1_000_000,
+			};
+			tracker.addUsage(usage);
+			const summary = tracker.getSummary();
+			expect(summary.total_cost).toBeCloseTo(1.125, 4);
+		});
+
+		it("should reset web search tracking", () => {
+			tracker.addWebSearchUsage(500);
+			tracker.reset();
+			const summary = tracker.getSummary();
+			expect(summary.web_search_calls).toBe(0);
+			expect(summary.web_search_cost).toBe(0);
+		});
+
+		it("should include web search fields in summary", () => {
+			tracker.addWebSearchUsage(250);
+			const summary = tracker.getSummary();
+			expect(summary.web_search_calls).toBe(250);
+			expect(summary.web_search_cost).toBeDefined();
+		});
+	});
+
 	describe("reset", () => {
 		it("should reset cost tracking", () => {
 			tracker.setModel("gpt-5.2");
@@ -259,6 +317,8 @@ describe("TokenTracker", () => {
 			expect(summary.total_cost).toBe(0);
 			expect(summary.model).toBeNull();
 			expect(summary.service_tier).toBeNull();
+			expect(summary.web_search_calls).toBe(0);
+			expect(summary.web_search_cost).toBe(0);
 		});
 	});
 });
