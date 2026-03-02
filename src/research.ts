@@ -3,6 +3,7 @@ import { Logger } from "./logger.ts";
 import { researchFieldConfiguration } from "./prompts.ts";
 import { generateResearchSummary } from "./research-summary.ts";
 import { createExtendedSchema, type ResearchFieldKey } from "./schemas.ts";
+import type { PerCompanyTracker } from "./tokenTracker.ts";
 import type { CompanyInput } from "./types.ts";
 
 function extractFieldValues(
@@ -11,7 +12,11 @@ function extractFieldValues(
 	return results;
 }
 
-export async function researchCompany(companyName: string, domain?: string) {
+export async function researchCompany(
+	companyName: string,
+	domain?: string,
+	tracker?: PerCompanyTracker,
+) {
 	Logger.log(`🔍 Starting research for ${companyName}`);
 	Logger.log(`Domain: ${domain}`);
 
@@ -20,12 +25,17 @@ export async function researchCompany(companyName: string, domain?: string) {
 		domain: domain,
 	};
 
-	const results = await researchAllFields(companyName);
+	const results = await researchAllFields(companyName, tracker);
 	const companyOutput = {
 		...companyInput,
 		...extractFieldValues(results),
 		"icp research summary": generateResearchSummary(results),
 	};
+
+	// Add tracking data if tracker is provided
+	if (tracker) {
+		(companyOutput as Record<string, unknown>)._usage = tracker.getSummary();
+	}
 
 	Logger.section("Research Results");
 	Logger.log(companyOutput);
@@ -33,12 +43,15 @@ export async function researchCompany(companyName: string, domain?: string) {
 	return companyOutput;
 }
 
-export async function researchAllFields(company: string) {
+export async function researchAllFields(
+	company: string,
+	tracker?: PerCompanyTracker,
+) {
 	const results = Object.fromEntries(
 		await Promise.all(
 			Object.entries(researchFieldConfiguration).map(async ([field]) => [
 				field,
-				await researchCompanyField(company, field as ResearchFieldKey),
+				await researchCompanyField(company, field as ResearchFieldKey, tracker),
 			]),
 		),
 	);
@@ -49,6 +62,7 @@ export async function researchAllFields(company: string) {
 export async function researchCompanyField<TKey extends ResearchFieldKey>(
 	company: string,
 	field: TKey,
+	tracker?: PerCompanyTracker,
 ) {
 	const prompt = researchFieldConfiguration[field].prompt(company);
 
@@ -60,6 +74,7 @@ export async function researchCompanyField<TKey extends ResearchFieldKey>(
 			name: field,
 			schema: schema,
 		},
+		tracker,
 	});
 
 	Logger.debug(`LLM response for ${field}:`, response);

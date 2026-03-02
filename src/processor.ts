@@ -1,13 +1,14 @@
 import type { KeyMappingConfig } from "./config.ts";
 import { Logger } from "./logger.ts";
 import { researchCompany } from "./research.ts";
+import { PerCompanyTracker } from "./tokenTracker.ts";
 import { normalizeCompanyInput } from "./transform.ts";
 import type { CompanyInputArray } from "./types.ts";
 
 /**
  * Processes an array of companies by researching each one with concurrency control.
  * For each company, calls researchCompany and merges the results with the input.
- * If an error occurs while researching a company, the error is saved to that company's result
+ * If an error occurs while researching a company, error is saved to that company's result
  * and processing continues with the remaining companies.
  * @param companies - Array of company inputs to process
  * @param config - Key mapping configuration for normalizing inputs
@@ -46,21 +47,27 @@ export async function processCompanyArray(
 				? normalizeCompanyInput(company, config)
 				: company;
 
+			// Create a tracker for this specific company
+			const tracker = new PerCompanyTracker();
+
 			try {
 				const researchResult = await researchCompany(
 					normalized.name,
 					normalized.domain,
+					tracker,
 				);
 				return { index, result: { ...company, ...researchResult } };
 			} catch (error) {
 				Logger.warn(`⚠️  Failed to research company: ${normalized.name}`);
 				Logger.warn(error);
+				// Include tracking data even if research failed
 				return {
 					index,
 					result: {
 						...company,
 						_researchError:
 							error instanceof Error ? error.message : String(error),
+						_usage: tracker.getSummary(),
 					},
 				};
 			}

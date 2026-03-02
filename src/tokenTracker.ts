@@ -234,6 +234,7 @@ export const MODEL_PRICING: Record<
  * Source: https://platform.openai.com/docs/pricing
  */
 export const WEB_SEARCH_PRICE_PER_1K_CALLS = 10.0;
+
 export interface TokenUsage {
 	input_tokens: number;
 	cached_tokens: number;
@@ -334,8 +335,7 @@ export class TokenTracker {
 	addWebSearchUsage(searchCalls: number) {
 		this.totalWebSearchCalls += searchCalls;
 		this.totalWebSearchCost =
-			(this.totalWebSearchCalls * WEB_SEARCH_PRICE_PER_1K_CALLS) /
-			1000;
+			(this.totalWebSearchCalls * WEB_SEARCH_PRICE_PER_1K_CALLS) / 1000;
 		this.totalCost =
 			this.totalInputCost + this.totalOutputCost + this.totalWebSearchCost;
 	}
@@ -420,6 +420,121 @@ export class TokenTracker {
 		this.totalCost = 0;
 		this.currentModel = null;
 		this.currentTier = null;
+	}
+}
+
+/**
+ * Tracks token usage and costs for a single company.
+ * Can be instantiated per company to track usage individually.
+ */
+export class PerCompanyTracker {
+	private totalInput = 0;
+	private totalCached = 0;
+	private totalOutput = 0;
+	private totalReasoning = 0;
+	private totalTokens = 0;
+	private callCount = 0;
+	private totalInputCost = 0;
+	private totalOutputCost = 0;
+	private totalCost = 0;
+	private currentModel: string | null = null;
+	private currentTier: ServiceTier | null = null;
+
+	private totalWebSearchCalls = 0;
+	private totalWebSearchCost = 0;
+
+	setModel(model: string) {
+		this.currentModel = model;
+	}
+
+	setServiceTier(tier: ServiceTier) {
+		this.currentTier = tier;
+	}
+
+	private calculateCost(
+		tokens: number,
+		tokenType: "input" | "cached" | "output" | "reasoning",
+	): number {
+		if (!this.currentModel || !this.currentTier) {
+			return 0;
+		}
+
+		const modelPricing = MODEL_PRICING[this.currentModel];
+		if (!modelPricing) {
+			return 0;
+		}
+
+		const tierPricing = modelPricing[this.currentTier];
+		if (!tierPricing) {
+			return 0;
+		}
+
+		const pricePerToken = this.getPricePerToken(tierPricing, tokenType);
+
+		return (tokens * pricePerToken) / 1_000_000;
+	}
+
+	private getPricePerToken(
+		pricing: ModelPricing,
+		tokenType: "input" | "cached" | "output" | "reasoning",
+	): number {
+		switch (tokenType) {
+			case "input":
+				return pricing.inputPrice;
+			case "cached":
+				return pricing.cachedPrice ?? pricing.inputPrice;
+			case "output":
+				return pricing.outputPrice;
+			case "reasoning":
+				return pricing.outputPrice;
+			default:
+				return 0;
+		}
+	}
+
+	addWebSearchUsage(searchCalls: number) {
+		this.totalWebSearchCalls += searchCalls;
+		this.totalWebSearchCost =
+			(this.totalWebSearchCalls * WEB_SEARCH_PRICE_PER_1K_CALLS) / 1000;
+		this.totalCost =
+			this.totalInputCost + this.totalOutputCost + this.totalWebSearchCost;
+	}
+
+	addUsage(usage: TokenUsage) {
+		this.totalInput += usage.input_tokens;
+		this.totalCached += usage.cached_tokens;
+		this.totalOutput += usage.output_tokens;
+		this.totalReasoning += usage.reasoning_tokens;
+		this.totalTokens += usage.total_tokens;
+		this.callCount++;
+
+		this.totalInputCost += this.calculateCost(usage.input_tokens, "input");
+		this.totalInputCost += this.calculateCost(usage.cached_tokens, "cached");
+		this.totalOutputCost += this.calculateCost(usage.output_tokens, "output");
+		this.totalOutputCost += this.calculateCost(
+			usage.reasoning_tokens,
+			"reasoning",
+		);
+		this.totalCost =
+			this.totalInputCost + this.totalOutputCost + this.totalWebSearchCost;
+	}
+
+	getSummary() {
+		return {
+			total_calls: this.callCount,
+			input_tokens: this.totalInput,
+			cached_tokens: this.totalCached,
+			output_tokens: this.totalOutput,
+			reasoning_tokens: this.totalReasoning,
+			total_tokens: this.totalTokens,
+			web_search_calls: this.totalWebSearchCalls,
+			web_search_cost: this.totalWebSearchCost,
+			input_cost: this.totalInputCost,
+			output_cost: this.totalOutputCost,
+			total_cost: this.totalCost,
+			model: this.currentModel,
+			service_tier: this.currentTier,
+		};
 	}
 }
 

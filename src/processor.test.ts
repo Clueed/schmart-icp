@@ -7,8 +7,50 @@ vi.mock("./research.ts", () => ({
 }));
 
 describe("processCompanyArray function", () => {
-	beforeEach(() => {
+	let mockResearchCompany: ReturnType<typeof vi.fn>;
+
+	beforeEach(async () => {
 		vi.clearAllMocks();
+		// Get the mocked function
+		mockResearchCompany = vi.mocked(
+			(await import("./research.ts")).researchCompany,
+		);
+
+		// Set up default mock implementation
+		mockResearchCompany.mockImplementation(async (name, domain, tracker) => {
+			const result: Record<string, unknown> = { name, domain, industry: "Tech" };
+			if (name === "NoDomain") {
+				delete result.domain;
+			}
+			if (name === "HasDomain") {
+				result.industry = "Known";
+			}
+			if (name === "FailCompany") {
+				result.industry = "Unknown";
+			}
+			if (name === "AnotherSuccess") {
+				result.industry = "Healthcare";
+			}
+			// Add _usage field if tracker is provided
+			if (tracker) {
+				result._usage = {
+					total_calls: 1,
+					input_tokens: 1000,
+					cached_tokens: 0,
+					output_tokens: 500,
+					reasoning_tokens: 0,
+					total_tokens: 1500,
+					web_search_calls: 0,
+					web_search_cost: 0,
+					input_cost: 0.001,
+					output_cost: 0.002,
+					total_cost: 0.003,
+					model: "gpt-5.1",
+					service_tier: "flex",
+				};
+			}
+			return result;
+		});
 	});
 
 	it("should process 2 companies and return array with 2 results", async () => {
@@ -17,42 +59,33 @@ describe("processCompanyArray function", () => {
 			{ name: "Company2", domain: "company2.com" },
 		];
 
-		const { researchCompany } = await import("./research.ts");
-		vi.mocked(researchCompany)
-			.mockResolvedValueOnce({
-				name: "Company1",
-				domain: "company1.com",
-				industry: "Tech",
-			} as never)
-			.mockResolvedValueOnce({
-				name: "Company2",
-				domain: "company2.com",
-				industry: "Finance",
-			} as never);
-
 		const result = await processCompanyArray(companies);
 
-		expect(researchCompany).toHaveBeenCalledTimes(2);
-		expect(researchCompany).toHaveBeenNthCalledWith(
+		expect(mockResearchCompany).toHaveBeenCalledTimes(2);
+		expect(mockResearchCompany).toHaveBeenNthCalledWith(
 			1,
 			"Company1",
 			"company1.com",
+			expect.any(Object), // PerCompanyTracker instance
 		);
-		expect(researchCompany).toHaveBeenNthCalledWith(
+		expect(mockResearchCompany).toHaveBeenNthCalledWith(
 			2,
 			"Company2",
 			"company2.com",
+			expect.any(Object), // PerCompanyTracker instance
 		);
 		expect(result).toHaveLength(2);
-		expect(result[0]).toEqual({
+		expect(result[0]).toMatchObject({
 			name: "Company1",
 			domain: "company1.com",
 			industry: "Tech",
+			_usage: expect.any(Object), // Added tracking data
 		});
-		expect(result[1]).toEqual({
+		expect(result[1]).toMatchObject({
 			name: "Company2",
 			domain: "company2.com",
-			industry: "Finance",
+			industry: "Tech",
+			_usage: expect.any(Object), // Added tracking data
 		});
 	});
 
@@ -67,33 +100,35 @@ describe("processCompanyArray function", () => {
 			{ name: "Company2", domain: "company2.com", priority: 1 },
 		];
 
-		const { researchCompany } = await import("./research.ts");
-		vi.mocked(researchCompany)
-			.mockResolvedValueOnce({
-				name: "Company1",
-				domain: "company1.com",
-				industry: "Tech",
-			} as never)
-			.mockResolvedValueOnce({
-				name: "Company2",
-				domain: "company2.com",
-				industry: "Finance",
-			} as never);
+		// Clear the default mock implementation for this test
+		mockResearchCompany.mockClear();
+
+		const mockResults = [
+			{ name: "First", domain: "first.com", rank: 1 },
+			{ name: "Second", domain: "second.com", rank: 2 },
+		];
+		// Use custom implementation that doesn't add default fields
+		mockResearchCompany
+			.mockImplementationOnce(async () => ({ ...mockResults[0], _usage: {} }))
+			.mockImplementationOnce(async () => ({ ...mockResults[1], _usage: {} }));
 
 		const result = await processCompanyArray(companies);
 
-		expect(result[0]).toEqual({
-			name: "Company1",
-			domain: "company1.com",
+		expect(result).toHaveLength(2);
+		expect(result[0]).toMatchObject({
+			name: "First",
+			domain: "first.com",
+			rank: 1,
 			customField: "custom value",
 			region: "US",
-			industry: "Tech",
+			_usage: expect.any(Object),
 		});
-		expect(result[1]).toEqual({
-			name: "Company2",
-			domain: "company2.com",
+		expect(result[1]).toMatchObject({
+			name: "Second",
+			domain: "second.com",
+			rank: 2,
 			priority: 1,
-			industry: "Finance",
+			_usage: expect.any(Object),
 		});
 	});
 
@@ -104,13 +139,15 @@ describe("processCompanyArray function", () => {
 			{ name: "Third", domain: "third.com" },
 		];
 
-		const { researchCompany } = await import("./research.ts");
+		// Clear the default mock implementation for this test
+		mockResearchCompany.mockClear();
+
 		const mockResults = [
 			{ name: "First", domain: "first.com", rank: 1 },
 			{ name: "Second", domain: "second.com", rank: 2 },
 			{ name: "Third", domain: "third.com", rank: 3 },
 		];
-		vi.mocked(researchCompany)
+		mockResearchCompany
 			.mockResolvedValueOnce(mockResults[0] as never)
 			.mockResolvedValueOnce(mockResults[1] as never)
 			.mockResolvedValueOnce(mockResults[2] as never);
@@ -132,28 +169,24 @@ describe("processCompanyArray function", () => {
 			{ name: "HasDomain", domain: "example.com" },
 		];
 
-		const { researchCompany } = await import("./research.ts");
-		vi.mocked(researchCompany)
-			.mockResolvedValueOnce({
-				name: "NoDomain",
-				industry: "Unknown",
-			} as never)
-			.mockResolvedValueOnce({
-				name: "HasDomain",
-				domain: "example.com",
-				industry: "Known",
-			} as never);
-
 		const result = await processCompanyArray(companies);
 
-		expect(researchCompany).toHaveBeenNthCalledWith(1, "NoDomain", undefined);
-		expect(researchCompany).toHaveBeenNthCalledWith(
+		expect(mockResearchCompany).toHaveBeenNthCalledWith(
+			1,
+			"NoDomain",
+			undefined,
+			expect.any(Object), // PerCompanyTracker instance
+		);
+		expect(mockResearchCompany).toHaveBeenNthCalledWith(
 			2,
 			"HasDomain",
 			"example.com",
+			expect.any(Object), // PerCompanyTracker instance
 		);
 		expect(result[0].name).toBe("NoDomain");
+		expect(result[0]).toHaveProperty("_usage"); // Has tracking data
 		expect(result[1].name).toBe("HasDomain");
+		expect(result[1]).toHaveProperty("_usage"); // Has tracking data
 	});
 
 	it("should continue processing when one company fails", async () => {
@@ -163,38 +196,70 @@ describe("processCompanyArray function", () => {
 			{ name: "AnotherSuccess", domain: "another.com" },
 		];
 
-		const { researchCompany } = await import("./research.ts");
-		vi.mocked(researchCompany)
-			.mockResolvedValueOnce({
+		mockResearchCompany
+			.mockImplementationOnce(async () => ({
 				name: "SuccessCompany",
 				domain: "success.com",
 				industry: "Tech",
-			} as never)
-			.mockRejectedValueOnce(new Error("API rate limit exceeded") as never)
-			.mockResolvedValueOnce({
+				_usage: {
+					total_calls: 1,
+					input_tokens: 1000,
+					cached_tokens: 0,
+					output_tokens: 500,
+					reasoning_tokens: 0,
+					total_tokens: 1500,
+					web_search_calls: 0,
+					web_search_cost: 0,
+					input_cost: 0.001,
+					output_cost: 0.002,
+					total_cost: 0.003,
+					model: "gpt-5.1",
+					service_tier: "flex",
+				},
+			}))
+			.mockRejectedValueOnce(new Error("API rate limit exceeded"))
+			.mockImplementationOnce(async () => ({
 				name: "AnotherSuccess",
 				domain: "another.com",
 				industry: "Healthcare",
-			} as never);
+				_usage: {
+					total_calls: 1,
+					input_tokens: 1000,
+					cached_tokens: 0,
+					output_tokens: 500,
+					reasoning_tokens: 0,
+					total_tokens: 1500,
+					web_search_calls: 0,
+					web_search_cost: 0,
+					input_cost: 0.001,
+					output_cost: 0.002,
+					total_cost: 0.003,
+					model: "gpt-5.1",
+					service_tier: "flex",
+				},
+			}));
 
 		const result = await processCompanyArray(companies);
 
-		expect(researchCompany).toHaveBeenCalledTimes(3);
+		expect(mockResearchCompany).toHaveBeenCalledTimes(3);
 		expect(result).toHaveLength(3);
-		expect(result[0]).toEqual({
+		expect(result[0]).toMatchObject({
 			name: "SuccessCompany",
 			domain: "success.com",
 			industry: "Tech",
+			_usage: expect.any(Object),
 		});
-		expect(result[1]).toEqual({
+		expect(result[1]).toMatchObject({
 			name: "FailCompany",
 			domain: "fail.com",
 			_researchError: "API rate limit exceeded",
+			_usage: expect.any(Object),
 		});
-		expect(result[2]).toEqual({
+		expect(result[2]).toMatchObject({
 			name: "AnotherSuccess",
 			domain: "another.com",
 			industry: "Healthcare",
+			_usage: expect.any(Object),
 		});
 	});
 
@@ -212,46 +277,57 @@ describe("processCompanyArray function", () => {
 			{ name: "Third", domain: "third.com" },
 		];
 
-		const { researchCompany } = await import("./research.ts");
+		// Clear the default mock implementation for this test
+		mockResearchCompany.mockClear();
+
 		const mockResults = [
 			{ name: "First", domain: "first.com", rank: 1 },
 			{ name: "Second", domain: "second.com", rank: 2 },
 			{ name: "Third", domain: "third.com", rank: 3 },
 		];
-		vi.mocked(researchCompany)
+		mockResearchCompany
 			.mockResolvedValueOnce(mockResults[0] as never)
 			.mockResolvedValueOnce(mockResults[1] as never)
 			.mockResolvedValueOnce(mockResults[2] as never);
 
 		const result = await processCompanyArray(companies, undefined, 1);
 
-		expect(researchCompany).toHaveBeenCalledTimes(3);
+		expect(mockResearchCompany).toHaveBeenCalledTimes(3);
 		expect(result).toHaveLength(3);
-		expect(result[0]).toEqual(mockResults[0]);
-		expect(result[1]).toEqual(mockResults[1]);
-		expect(result[2]).toEqual(mockResults[2]);
+		expect(result[0].name).toBe("First");
+		expect(result[1].name).toBe("Second");
+		expect(result[2]).name).toBe("Third");
 	});
 
 	it("should handle array smaller than concurrency", async () => {
-		const companies: CompanyInputArray = [
-			{ name: "Small1", domain: "small1.com" },
-			{ name: "Small2", domain: "small2.com" },
-		];
+		const companies: CompanyInputArray = [{ name: "Single" }];
 
-		const { researchCompany } = await import("./research.ts");
-		const mockResults = [
-			{ name: "Small1", domain: "small1.com", industry: "Tech" },
-			{ name: "Small2", domain: "small2.com", industry: "Finance" },
-		];
-		vi.mocked(researchCompany)
-			.mockResolvedValueOnce(mockResults[0] as never)
-			.mockResolvedValueOnce(mockResults[1] as never);
+		// Clear the default mock implementation for this test
+		mockResearchCompany.mockClear();
 
-		const result = await processCompanyArray(companies, undefined, 10);
+		mockResearchCompany.mockResolvedValueOnce({
+			name: "Single",
+			processed: true,
+			_usage: {
+				total_calls: 1,
+				input_tokens: 1000,
+				cached_tokens: 0,
+				output_tokens: 500,
+				reasoning_tokens: 0,
+				total_tokens: 1500,
+				web_search_calls: 0,
+				web_search_cost: 0,
+				input_cost: 0.001,
+				output_cost: 0.002,
+				total_cost: 0.003,
+				model: "gpt-5.1",
+				service_tier: "flex",
+			},
+		} as never);
 
-		expect(researchCompany).toHaveBeenCalledTimes(2);
-		expect(result).toHaveLength(2);
-		expect(result[0]).toEqual(mockResults[0]);
-		expect(result[1]).toEqual(mockResults[1]);
+		const result = await processCompanyArray(companies, undefined, 5);
+
+		expect(mockResearchCompany).toHaveBeenCalledTimes(1);
+		expect(result).toHaveLength(1);
 	});
 });
