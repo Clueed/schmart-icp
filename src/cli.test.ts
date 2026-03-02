@@ -32,6 +32,11 @@ vi.mock("./tokenTracker.ts", () => ({
 
 const originalProcessArgv = process.argv;
 
+// Helper function to simulate file not found error
+const throwFileNotFound = () => {
+	throw new Error("ENOENT: no such file or directory");
+};
+
 describe("main function", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -59,9 +64,12 @@ describe("main function", () => {
 	it("should detect JSON file and handle it appropriately", async () => {
 		process.argv = ["node", "index.ts", "companies.json"];
 		vi.mocked(fs.existsSync).mockReturnValue(true);
-		vi.mocked(fs.readFileSync).mockReturnValue(
-			'[{"name": "Company1", "domain": "company1.com"}]',
-		);
+		// First call returns input data, second call (for output file) throws
+		vi.mocked(fs.readFileSync)
+			.mockReturnValueOnce(
+				JSON.stringify([{ name: "Company1", domain: "company1.com" }]),
+			)
+			.mockImplementationOnce(throwFileNotFound);
 
 		const { researchCompany } = await import("./research.ts");
 		vi.mocked(researchCompany).mockResolvedValue({
@@ -91,9 +99,14 @@ describe("main function", () => {
 			"Website",
 		];
 		vi.mocked(fs.existsSync).mockReturnValue(true);
-		vi.mocked(fs.readFileSync).mockReturnValue(
-			'[{"Company Name": "Test Company", "Website": "test.com"}]',
-		);
+		// First call returns input data, second call (for output file) throws
+		vi.mocked(fs.readFileSync)
+			.mockReturnValueOnce(
+				JSON.stringify([
+					{ "Company Name": "Test Company", Website: "test.com" },
+				]),
+			)
+			.mockImplementationOnce(throwFileNotFound);
 
 		const { researchCompany } = await import("./research.ts");
 		vi.mocked(researchCompany).mockResolvedValue({
@@ -120,9 +133,14 @@ describe("main function", () => {
 			"Company Name",
 		];
 		vi.mocked(fs.existsSync).mockReturnValue(true);
-		vi.mocked(fs.readFileSync).mockReturnValue(
-			'[{"Company Name": "Test Company", "domain": "test.com"}]',
-		);
+		// First call returns input data, second call (for output file) throws
+		vi.mocked(fs.readFileSync)
+			.mockReturnValueOnce(
+				JSON.stringify([
+					{ "Company Name": "Test Company", domain: "test.com" },
+				]),
+			)
+			.mockImplementationOnce(throwFileNotFound);
 
 		const { researchCompany } = await import("./research.ts");
 		vi.mocked(researchCompany).mockResolvedValue({
@@ -143,9 +161,12 @@ describe("main function", () => {
 	it("should process JSON file without flags (backward compatibility)", async () => {
 		process.argv = ["node", "index.ts", "companies.json"];
 		vi.mocked(fs.existsSync).mockReturnValue(true);
-		vi.mocked(fs.readFileSync).mockReturnValue(
-			'[{"name": "Test Company", "domain": "test.com"}]',
-		);
+		// First call returns input data, second call (for output file) throws
+		vi.mocked(fs.readFileSync)
+			.mockReturnValueOnce(
+				JSON.stringify([{ name: "Test Company", domain: "test.com" }]),
+			)
+			.mockImplementationOnce(throwFileNotFound);
 
 		const { researchCompany } = await import("./research.ts");
 		vi.mocked(researchCompany).mockResolvedValue({

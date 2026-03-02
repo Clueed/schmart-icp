@@ -1,7 +1,13 @@
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { createKeyMappingConfig, DEFAULT_KEY_MAPPING } from "./config.ts";
-import { isJsonFile, readJsonFile, writeResults } from "./file-io.ts";
+import {
+	filterUnprocessed,
+	isJsonFile,
+	loadExistingResults,
+	readJsonFile,
+	writeResults,
+} from "./file-io.ts";
 import { Logger } from "./logger.ts";
 import { processCompanyArray } from "./processor.ts";
 import { researchCompany } from "./research.ts";
@@ -50,22 +56,38 @@ export async function main() {
 	if (isJsonFile(input)) {
 		Logger.section(`Batch Processing - ${input}`);
 
-		let results: Array<Record<string, unknown>>;
-
 		try {
 			const companies = readJsonFile(input, config);
-			results = await processCompanyArray(companies, config);
+			const existingResults = loadExistingResults(input);
+			const toProcess = filterUnprocessed(companies, existingResults, config);
+
+			if (toProcess.length === 0) {
+				// If there are companies in the input but all are already processed,
+				// just write existing results
+				if (companies.length > 0) {
+					Logger.log("✅ All companies already processed!");
+					writeResults(input, existingResults);
+					globalTokenTracker.logSummary();
+					return;
+				}
+				// Empty input array - write empty output file
+				Logger.log("✅ All companies already processed!");
+				writeResults(input, []);
+				globalTokenTracker.logSummary();
+				return;
+			}
+
+			Logger.log(
+				`Processing ${toProcess.length} of ${companies.length} companies...`,
+			);
+			const newResults = await processCompanyArray(toProcess, config);
+
+			// Merge and write all results
+			const allResults = [...existingResults, ...newResults];
+			writeResults(input, allResults);
 		} catch (readOrProcessError) {
 			Logger.section("❌ Batch processing failed ❌");
 			Logger.error(readOrProcessError);
-			process.exit(1);
-		}
-
-		try {
-			writeResults(input, results);
-		} catch (writeError) {
-			Logger.error("❌ Failed to write results file");
-			Logger.error(writeError);
 			process.exit(1);
 		}
 

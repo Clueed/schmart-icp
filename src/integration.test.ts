@@ -32,6 +32,11 @@ vi.mock("./tokenTracker.ts", () => ({
 
 const originalProcessArgv = process.argv;
 
+// Helper function to simulate file not found error
+const throwFileNotFound = () => {
+	throw new Error("ENOENT: no such file or directory");
+};
+
 describe("Integration - JSON file batch processing", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -41,9 +46,14 @@ describe("Integration - JSON file batch processing", () => {
 	it("should process JSON file with 2 companies and create output file", async () => {
 		process.argv = ["node", "index.ts", "companies.json"];
 		vi.mocked(fs.existsSync).mockReturnValue(true);
-		vi.mocked(fs.readFileSync).mockReturnValue(
-			'[{"name": "Company1", "domain": "company1.com"}, {"name": "Company2", "domain": "company2.com"}]',
-		);
+		vi.mocked(fs.readFileSync)
+			.mockReturnValueOnce(
+				JSON.stringify([
+					{ name: "Company1", domain: "company1.com" },
+					{ name: "Company2", domain: "company2.com" },
+				]),
+			)
+			.mockImplementationOnce(throwFileNotFound);
 
 		const { researchCompany } = await import("./research.ts");
 		vi.mocked(researchCompany)
@@ -83,7 +93,9 @@ describe("Integration - JSON file batch processing", () => {
 	it("should process JSON file with empty array and create empty output file", async () => {
 		process.argv = ["node", "index.ts", "empty.json"];
 		vi.mocked(fs.existsSync).mockReturnValue(true);
-		vi.mocked(fs.readFileSync).mockReturnValue("[]");
+		vi.mocked(fs.readFileSync)
+			.mockReturnValueOnce("[]")
+			.mockImplementationOnce(throwFileNotFound);
 
 		const { globalTokenTracker } = await import("./tokenTracker.ts");
 		vi.mocked(globalTokenTracker.logSummary).mockImplementation(() => {});
@@ -186,9 +198,14 @@ describe("Integration - JSON file batch processing", () => {
 			"Websites",
 		];
 		vi.mocked(fs.existsSync).mockReturnValue(true);
-		vi.mocked(fs.readFileSync).mockReturnValue(
-			'[{"Company Name": "Company1", "Websites": "company1.com"}, {"Company Name": "Company2", "Websites": "company2.com"}]',
-		);
+		vi.mocked(fs.readFileSync)
+			.mockReturnValueOnce(
+				JSON.stringify([
+					{ "Company Name": "Company1", Websites: "company1.com" },
+					{ "Company Name": "Company2", Websites: "company2.com" },
+				]),
+			)
+			.mockImplementationOnce(throwFileNotFound);
 
 		const { researchCompany } = await import("./research.ts");
 		vi.mocked(researchCompany)
@@ -246,9 +263,14 @@ describe("Integration - JSON file batch processing", () => {
 			"Company Name",
 		];
 		vi.mocked(fs.existsSync).mockReturnValue(true);
-		vi.mocked(fs.readFileSync).mockReturnValue(
-			'[{"Company Name": "Company1", "domain": "company1.com"}, {"Company Name": "Company2", "domain": "company2.com"}]',
-		);
+		vi.mocked(fs.readFileSync)
+			.mockReturnValueOnce(
+				JSON.stringify([
+					{ "Company Name": "Company1", domain: "company1.com" },
+					{ "Company Name": "Company2", domain: "company2.com" },
+				]),
+			)
+			.mockImplementationOnce(throwFileNotFound);
 
 		const { researchCompany } = await import("./research.ts");
 		vi.mocked(researchCompany)
@@ -334,9 +356,18 @@ describe("Integration - JSON file batch processing", () => {
 			"Websites",
 		];
 		vi.mocked(fs.existsSync).mockReturnValue(true);
-		vi.mocked(fs.readFileSync).mockReturnValue(
-			'[{"Company Name": "Company1", "Websites": "company1.com", "Region": "US", "Priority": 1}]',
-		);
+		vi.mocked(fs.readFileSync)
+			.mockReturnValueOnce(
+				JSON.stringify([
+					{
+						"Company Name": "Company1",
+						Websites: "company1.com",
+						Region: "US",
+						Priority: 1,
+					},
+				]),
+			)
+			.mockImplementationOnce(throwFileNotFound);
 
 		const { researchCompany } = await import("./research.ts");
 		vi.mocked(researchCompany).mockResolvedValue({
@@ -426,7 +457,9 @@ describe("Integration - JSON file batch processing", () => {
 
 		await main();
 
-		expect(researchCompany).toHaveBeenCalledWith("Hermes Arzneimittel Holding GmbH");
+		expect(researchCompany).toHaveBeenCalledWith(
+			"Hermes Arzneimittel Holding GmbH",
+		);
 		expect(globalTokenTracker.logSummary).toHaveBeenCalled();
 		expect(fs.writeFileSync).not.toHaveBeenCalled();
 
@@ -438,8 +471,9 @@ describe("Integration - JSON file batch processing", () => {
 		expect(expectedSummary).not.toContain("unknown");
 
 		// Verify sources are merged (not duplicated for employees/revenue)
-		const sourceLines = expectedSummary.split("\n").filter((line) => line.includes("https://de.wikipedia.org"));
+		const sourceLines = expectedSummary
+			.split("\n")
+			.filter((line) => line.includes("https://de.wikipedia.org"));
 		expect(sourceLines.length).toBe(1); // Source should appear only once for both employees and revenue
 	});
-
 });

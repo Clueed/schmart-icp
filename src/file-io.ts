@@ -66,3 +66,81 @@ export function writeResults(
 	Logger.log(`✅ Results written to ${outputPath}`);
 	return outputPath;
 }
+
+/**
+ * Gets the output path for a given input file.
+ * @param inputPath - Original input file path
+ * @returns Path to the output file
+ */
+export function getOutputPath(inputPath: string): string {
+	return inputPath.replace(/\.json$/, "-researched.json");
+}
+
+/**
+ * Loads existing results from the output file if it exists.
+ * @param inputPath - Original input file path
+ * @returns Array of existing results, or empty array if file doesn't exist
+ */
+export function loadExistingResults(
+	inputPath: string,
+): Array<Record<string, unknown>> {
+	const outputPath = getOutputPath(inputPath);
+
+	try {
+		const fileContent = fs.readFileSync(outputPath, "utf-8");
+		const parsedData = JSON.parse(fileContent);
+
+		if (!Array.isArray(parsedData)) {
+			Logger.warn(
+				`Output file ${outputPath} does not contain an array, starting fresh`,
+			);
+			return [];
+		}
+
+		return parsedData;
+	} catch {
+		// File doesn't exist or is invalid JSON - return empty array
+		return [];
+	}
+}
+
+/**
+ * Filters out companies that have already been processed.
+ * Uses the configured name field as the unique identifier.
+ * @param companies - Array of company inputs to process
+ * @param existingResults - Array of already processed results
+ * @param config - Optional key mapping config for custom name field
+ * @returns Array of companies that haven't been processed yet
+ */
+export function filterUnprocessed(
+	companies: CompanyInputArray,
+	existingResults: Array<Record<string, unknown>>,
+	config?: KeyMappingConfig,
+): CompanyInputArray {
+	const nameKey = config?.nameKey ?? "name";
+	const processedNames = new Set<string>();
+
+	for (const result of existingResults) {
+		const name = result[nameKey];
+		if (typeof name === "string") {
+			processedNames.add(name);
+		}
+	}
+
+	const unprocessed = companies.filter((company) => {
+		const name = company[nameKey] as string | undefined;
+		if (name && processedNames.has(name)) {
+			Logger.debug(`Skipping already processed: ${name}`);
+			return false;
+		}
+		return true;
+	});
+
+	if (processedNames.size > 0) {
+		Logger.log(
+			`📋 Found ${processedNames.size} already processed, ${unprocessed.length} remaining`,
+		);
+	}
+
+	return unprocessed;
+}
