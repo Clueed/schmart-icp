@@ -24,11 +24,15 @@ vi.mock("./research.ts", () => ({
 	researchCompany: vi.fn(),
 }));
 
-vi.mock("./tokenTracker.ts", () => ({
-	globalTokenTracker: {
-		logSummary: vi.fn(),
-	},
-}));
+vi.mock("./tokenTracker.ts", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("./tokenTracker.ts")>();
+	return {
+		...actual,
+		globalTokenTracker: {
+			logSummary: vi.fn(),
+		},
+	};
+});
 
 const originalProcessArgv = process.argv;
 
@@ -84,7 +88,7 @@ describe("main function", () => {
 		await main();
 
 		expect(researchCompany).not.toHaveBeenCalledWith("companies.json");
-		expect(researchCompany).toHaveBeenCalledWith("Company1", "company1.com");
+		expect(researchCompany).toHaveBeenCalledWith("Company1", "company1.com", expect.any(Object));
 		expect(globalTokenTracker.logSummary).toHaveBeenCalled();
 	});
 
@@ -120,7 +124,7 @@ describe("main function", () => {
 
 		await main();
 
-		expect(researchCompany).toHaveBeenCalledWith("Test Company", "test.com");
+		expect(researchCompany).toHaveBeenCalledWith("Test Company", "test.com", expect.any(Object));
 		expect(globalTokenTracker.logSummary).toHaveBeenCalled();
 	});
 
@@ -154,7 +158,7 @@ describe("main function", () => {
 
 		await main();
 
-		expect(researchCompany).toHaveBeenCalledWith("Test Company", "test.com");
+		expect(researchCompany).toHaveBeenCalledWith("Test Company", "test.com", expect.any(Object));
 		expect(globalTokenTracker.logSummary).toHaveBeenCalled();
 	});
 
@@ -180,7 +184,7 @@ describe("main function", () => {
 
 		await main();
 
-		expect(researchCompany).toHaveBeenCalledWith("Test Company", "test.com");
+		expect(researchCompany).toHaveBeenCalledWith("Test Company", "test.com", expect.any(Object));
 		expect(globalTokenTracker.logSummary).toHaveBeenCalled();
 	});
 

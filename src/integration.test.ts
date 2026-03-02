@@ -24,11 +24,15 @@ vi.mock("./research.ts", () => ({
 	researchCompany: vi.fn(),
 }));
 
-vi.mock("./tokenTracker.ts", () => ({
-	globalTokenTracker: {
-		logSummary: vi.fn(),
-	},
-}));
+vi.mock("./tokenTracker.ts", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("./tokenTracker.ts")>();
+	return {
+		...actual,
+		globalTokenTracker: {
+			logSummary: vi.fn(),
+		},
+	};
+});
 
 const originalProcessArgv = process.argv;
 
@@ -74,8 +78,8 @@ describe("Integration - JSON file batch processing", () => {
 		await main();
 
 		expect(researchCompany).toHaveBeenCalledTimes(2);
-		expect(researchCompany).toHaveBeenCalledWith("Company1", "company1.com");
-		expect(researchCompany).toHaveBeenCalledWith("Company2", "company2.com");
+		expect(researchCompany).toHaveBeenCalledWith("Company1", "company1.com", expect.any(Object));
+		expect(researchCompany).toHaveBeenCalledWith("Company2", "company2.com", expect.any(Object));
 		expect(fs.writeFileSync).toHaveBeenCalledWith(
 			"companies-researched.json",
 			JSON.stringify(
@@ -226,11 +230,13 @@ describe("Integration - JSON file batch processing", () => {
 			1,
 			"Company1",
 			"company1.com",
+			expect.any(Object),
 		);
 		expect(researchCompany).toHaveBeenNthCalledWith(
 			2,
 			"Company2",
 			"company2.com",
+			expect.any(Object),
 		);
 		expect(fs.writeFileSync).toHaveBeenCalledWith(
 			"companies-researched.json",
@@ -291,11 +297,13 @@ describe("Integration - JSON file batch processing", () => {
 			1,
 			"Company1",
 			"company1.com",
+			expect.any(Object),
 		);
 		expect(researchCompany).toHaveBeenNthCalledWith(
 			2,
 			"Company2",
 			"company2.com",
+			expect.any(Object),
 		);
 		expect(fs.writeFileSync).toHaveBeenCalledWith(
 			"companies-researched.json",
